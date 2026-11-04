@@ -22,6 +22,8 @@ struct LogSpec {
  * Parses a logging threshold specification and category overrides.
  */
 std::optional<LogSpec> LogParseSpec(std::string_view spec);
+/** Resolves the shared category/boot/config precedence without backend state. */
+LogLevel LogResolveLevel(LogCategory category, const LogConfig &config, const LogSpec &boot);
 /**
  * Returns the active threshold for a category after applying overrides.
  */

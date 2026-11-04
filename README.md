@@ -16,7 +16,9 @@ This is a source port, not translation of a compiled PC executable.
 The [PC baseline](docs/PC_BASELINE_2026-11-04.md) builds and renders the title,
 opening, town and first dungeon. Launch the prepared local build with
 `./run-pc.ps1`. The [Switch work](docs/SWITCH_STATUS.md) has a compiler audit
-and a buildable core-math diagnostic NRO. A full Switch game build and
+and buildable core-math and [logging diagnostic NROs](docs/SWITCH_LOGGING.md).
+The logging backend passes focused host checks and is ready for its SD-card test.
+A full Switch game build and
 hardware execution are not yet established.
 
 See [the Switch work plan](docs/PC_TO_SWITCH.md) for scope and milestones.

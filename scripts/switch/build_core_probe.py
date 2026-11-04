@@ -14,6 +14,7 @@ def main():
     parser.add_argument("--pc-build", type=Path, default=ROOT / "port/build/windows-x64-release")
     parser.add_argument("--devkitpro", type=Path, default=Path("C:/devkitPro"))
     parser.add_argument("--output", type=Path, default=ROOT / "port/build/switch-core-probe")
+    parser.add_argument("--logging", action="store_true", help="include the real logging backend and SD file checks")
     args = parser.parse_args()
     sdk, pc, output = args.devkitpro.resolve(), args.pc_build.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -30,6 +31,8 @@ def main():
     arch = ["-march=armv8-a+crc+crypto", "-mtune=cortex-a57", "-mtp=soft", "-fPIE"]
     flags = arch + ["-O2", "-ffunction-sections", "-fdata-sections", "-ffp-contract=off", "-fsigned-char",
                     "-D__SWITCH__", "-DNDEBUG", "-I" + str(sdk / "libnx/include")]
+    if args.logging:
+        flags.append("-DCT_SWITCH_LOG_PROBE")
     entries = json.loads((pc / "compile_commands.json").read_text())
     wanted = [pc / "ps2_src/mg_math.cpp", ROOT / "port/src/mg_math.cpp",
               ROOT / "tools/kazarov/src/cpp/sce/libvu0.cpp"]
@@ -51,19 +54,35 @@ def main():
         sources.append(dict(path=source.relative_to(ROOT).as_posix(), sha256=hashlib.sha256(source.read_bytes()).hexdigest()))
     run([cxx, "-std=gnu++26", *flags, *options, "-c", checks, "-o", output / "checks.o"])
     run([cc, "-std=gnu11", *flags, "-c", driver, "-o", output / "main.o"])
-    elf = output / "chronicletwo-core-probe.elf"
-    nro = output / "chronicletwo-core-probe.nro"
+    if args.logging:
+        logging_sources = [ROOT / "port/switch/core_probe/log_checks.cpp",
+                           ROOT / "port/src/log/log_sync.cpp", ROOT / "port/src/log/log_common.cpp",
+                           ROOT / "port/src/log/ps2_printf.cpp", ROOT / "tools/kazarov/src/cpp/platform/log.cpp",
+                           ROOT / "tools/kazarov/src/cpp/platform/settings.cpp"]
+        includes = ["-I" + str(ROOT / directory) for directory in ("port/src", "port/include", "tools/kazarov/include")]
+        for index, source in enumerate(logging_sources):
+            obj = output / f"logging-{index}.o"
+            run([cxx, "-std=gnu++26", *flags, *includes, "-c", source, "-o", obj])
+            objects.append(obj)
+            sources.append(dict(path=source.relative_to(ROOT).as_posix(), sha256=hashlib.sha256(source.read_bytes()).hexdigest()))
+    name = "chronicletwo-logging-probe" if args.logging else "chronicletwo-core-probe"
+    elf = output / (name + ".elf")
+    nro = output / (name + ".nro")
     run([cxx, *arch, "-specs=" + str(sdk / "libnx/switch.specs"),
          "-L" + str(sdk / "libnx/lib"), "-Wl,--gc-sections", "-Wl,-Map," + str(output / "probe.map"),
          "-o", elf, output / "main.o", output / "checks.o", *objects, "-lnx", "-lm"])
     nacp = output / "probe.nacp"
-    run([sdk / "tools/bin" / ("nacptool" + suffix), "--create", "ChronicleTwo PC-to-Switch core probe",
-         "ChronicleTwo contributors", "0.1.0", nacp])
+    title = "ChronicleTwo PC-to-Switch logging probe" if args.logging else "ChronicleTwo PC-to-Switch core probe"
+    run([sdk / "tools/bin" / ("nacptool" + suffix), "--create", title,
+         "ChronicleTwo contributors", "0.2.0" if args.logging else "0.1.0", nacp])
     run([sdk / "tools/bin" / ("elf2nro" + suffix), elf, nro,
          "--icon=" + str(sdk / "libnx/default_icon.jpg"), "--nacp=" + str(nacp)])
     nm = sdk / "devkitA64/bin" / ("aarch64-none-elf-nm" + suffix)
     symbols = subprocess.check_output([str(nm), "-C", "--defined-only", str(elf)], text=True)
     required = ["mgNormalizeVector(", "mgVectorInterpolate(", "sceVu0ApplyMatrix", "ctSwitchMathChecks"]
+    if args.logging:
+        required += ["ctSwitchLogChecks", "LogAttachFile(", "LogFlushForCrash(", "log_detail::SyncWrite(",
+                     "pthread_create", "fsdevMountSdmc"]
     for symbol in required:
         if symbol not in symbols:
             raise RuntimeError("Required linked symbol missing: " + symbol)
@@ -72,7 +91,8 @@ def main():
                     compiler=subprocess.check_output([str(cxx), "--version"], text=True).splitlines()[0],
                     pc_database_sha256=hashlib.sha256((pc / "compile_commands.json").read_bytes()).hexdigest(),
                     nro_sha256=hashlib.sha256(nro.read_bytes()).hexdigest(),
-                    hardware_tested=False, full_engine=False, required_symbols=required)
+                    hardware_tested=False, full_engine=False, logging_backend="synchronous" if args.logging else None,
+                    required_symbols=required)
     (output / "build.json").write_text(json.dumps(manifest, indent=2))
     print(f"Built {nro} ({nro.stat().st_size} bytes); hardware execution not yet tested")
 

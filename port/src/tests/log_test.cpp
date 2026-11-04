@@ -20,7 +20,9 @@
 #include "log/log.hpp"
 #include "log/log_internal.hpp"
 #include "log_capture.hpp"
+#ifndef CT_LOG_STANDALONE
 #include "platform/config.hpp"
+#endif
 #include "ps2_printf.hpp"
 
 #undef printf
@@ -322,6 +324,7 @@ TEST_F(LogFiles, SessionFileHasTimeLevelThreadAndCategory) {
         << text;
 }
 
+#ifndef CT_LOG_STANDALONE
 TEST(LogConfigKeys, RoundTripThroughConfigJson) {
     Config config;
     config.log.level = LogLevel::Trace;
@@ -348,5 +351,7 @@ TEST(LogConfigKeys, InvalidValuesKeepTheirDefaults) {
     EXPECT_EQ(config.log.categories, expected);
     EXPECT_EQ(ConfigParse(R"({"log":{"keep":1001}})").log.keep, kLogKeepDefault);
 }
+
+#endif
 
 } // namespace

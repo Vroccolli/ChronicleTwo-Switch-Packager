@@ -1,9 +1,32 @@
 # Logging
 
-The port logs through `port/src/log/log.hpp`, a thin layer over [Quill](https://github.com/odygrd/quill) v13.1.0
+The port logs through the shared API in `port/src/log/log.hpp`. On PC this selects
+`log_quill.hpp`, a thin layer over [Quill](https://github.com/odygrd/quill) v13.1.0
 (`port/cmake/logging.cmake`). A `CT_LOG_*` call copies its arguments into the calling thread's queue and returns;
 one backend thread, `ct-log`, formats every line and writes it to stderr and to the session's log file. Nothing is
 formatted on the game thread or the audio callback.
+
+Switch selects the synchronous backend in `log_sync.hpp` and `log_sync.cpp`.
+It has no Quill or `mmap` dependency: callers format a record and deliver it
+under a process-lifetime I/O mutex. Level/category precedence, retention and
+printf line assembly come from `log_common.cpp`, shared with PC. Console
+messages, session-only messages, early file buffering, rate limits and
+Kazarov/printf routing retain the same public API. Worker records are complete
+before the call returns; there is no logging worker or per-thread queue.
+
+This backend allocates while formatting and can block on console/SD I/O. It
+does not provide PC's deferred-formatting/audio-callback performance guarantee.
+`LogThreadReady` initializes its state; it does not preallocate a queue.
+`LogFlushForCrash` bounds mutex acquisition by its budget, then flushes stdio;
+the storage driver's flush duration cannot be bounded by that mutex timeout.
+It returns false from a capture callback to avoid recursive backend entry.
+The state and file sink survive `LogShutdown` for late destructor records.
+`CT_LOG_SYNC_COMPILE_LEVEL` selects the lowest compiled synchronous severity
+by its `LogLevel` numeric value (default 0/Trace).
+
+The focused host checks and Switch hardware checkpoint are documented in
+[the Switch logging report](SWITCH_LOGGING.md). The remaining sections describe
+the PC backend unless a shared public operation is explicitly discussed.
 
 ## Writing a log line
 

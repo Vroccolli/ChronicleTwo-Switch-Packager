@@ -1,10 +1,12 @@
 # Switch bring-up: 2026-11-04
 
-The first diagnostic NRO builds. The full game engine does not yet build or
+Core math and [logging diagnostic NROs](SWITCH_LOGGING.md) build. Logging now
+has a real Switch backend; its updated audit is 387/424 and focused host
+checks pass 30/30. The full game engine does not yet build or
 run on Switch. No hardware execution or deployment has been performed for
 this repository.
 
-## Actual ARM64 compilation audit
+## Initial ARM64 compilation audit (before logging bring-up)
 
 `scripts/switch/audit_compile.py` reads the existing PC compile database and
 checks the actual generated game sources, native overrides, bridge consumers,
@@ -108,8 +110,8 @@ direct compiler and packer also worked inside it.
 
 ## Next implementation work
 
-1. Separate the logging interface from Quill's desktop allocation dependency
-   and add a real Switch logging backend. Recheck the 53 blocked consumers.
+1. Logging bring-up is complete for this checkpoint; perform the
+   [logging hardware test](SWITCH_LOGGING.md#hardware-test).
 2. Implement the existing arena memory contract with native Switch allocation
    and protection, and preserve the game's cooperative scheduler with an
    ARM64 context backend. Verify guard pages and context switches on hardware.
