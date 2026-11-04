@@ -16,3 +16,9 @@ add_custom_target(switch_logging_probe
         --output "${CMAKE_BINARY_DIR}/logging-probe"
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     COMMENT "Building Switch logging diagnostic with real backend and SD file readback")
+add_custom_target(switch_runtime_probe
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/switch/build_core_probe.py"
+        --runtime --pc-build "${CT_SWITCH_PC_BUILD}" --devkitpro "${CT_SWITCH_DEVKITPRO}"
+        --output "${CMAKE_BINARY_DIR}/runtime-probe"
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    COMMENT "Building Switch memory and cooperative-context diagnostic")

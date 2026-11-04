@@ -178,4 +178,5 @@ cmake --build port/build/logging-tests -j4
 ctest --test-dir port/build/logging-tests --output-on-failure -j4
 ```
 
-The next platform work is the arena memory and cooperative context backend.
+The [arena memory and cooperative context checkpoint](SWITCH_RUNTIME.md) now
+has an implementation and an uploaded 0.3.0 diagnostic awaiting hardware testing.

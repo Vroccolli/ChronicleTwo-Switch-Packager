@@ -6,6 +6,13 @@ checks pass 30/30. The 0.2.1 logging/math probe was deployed and passed its
 bounded hardware checks, verified from the screenshot and saved log. The full
 game engine does not yet build or run on Switch.
 
+The [runtime checkpoint](SWITCH_RUNTIME.md) adds arena memory and ARM64
+cooperative contexts, with 28/28 host checks passing. The adapted syntax audit
+now passes 390/425 units. Its 0.3.0 diagnostic has been uploaded and verified
+by download/hash comparison; hardware execution is pending. Remaining first
+errors are 32 GCC linkage conflicts, two `dlfcn.h` consumers and one
+crash-handler `sys/mman.h` dependency.
+
 ## Initial ARM64 compilation audit (before logging bring-up)
 
 `scripts/switch/audit_compile.py` reads the existing PC compile database and

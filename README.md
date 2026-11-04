@@ -18,6 +18,8 @@ opening, town and first dungeon. Launch the prepared local build with
 `./run-pc.ps1`. The [Switch work](docs/SWITCH_STATUS.md) has a compiler audit
 and buildable core-math and [logging diagnostic NROs](docs/SWITCH_LOGGING.md).
 The logging backend passes focused host checks and its 0.2.1 SD-card hardware test.
+The [memory and cooperative thread adapters](docs/SWITCH_RUNTIME.md) pass 28 host
+checks. Their 0.3.0 runtime diagnostic is uploaded; Switch execution is pending.
 A full Switch game build and full-game hardware execution are not yet established.
 
 See [the Switch work plan](docs/PC_TO_SWITCH.md) for scope and milestones.

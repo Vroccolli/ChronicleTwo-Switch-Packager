@@ -61,8 +61,12 @@ Switch renderer and full-game hardware execution are not yet established.
 
 The [logging checkpoint](SWITCH_LOGGING.md) removes Quill's desktop dependency
 from Switch consumers, passes 30 focused host checks and builds a logging NRO
-whose 0.2.1 SD-card test now passes on hardware. The updated audit parses 387/424 units. Arena
-memory, cooperative contexts and crash-platform services remain to be adapted.
+whose 0.2.1 SD-card test now passes on hardware. The
+[runtime checkpoint](SWITCH_RUNTIME.md) implements arena memory and cooperative
+contexts, passes 28 host tests and raises the adapted audit to 390/425 units.
+The 0.3.0 runtime probe is uploaded with checksum readback verified; its hardware
+results are pending. Crash-platform services, GCC linkage conflicts and the
+renderer/library integration remain open.
 
 ## Diagnostic deployment preference
 

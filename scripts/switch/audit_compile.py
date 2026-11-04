@@ -12,6 +12,7 @@ from pathlib import Path
 import re
 import shlex
 import subprocess
+from prepare_runtime import prepare_scheduler
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -69,6 +70,7 @@ def main():
     parser.add_argument("--jobs", type=int, default=4)
     parser.add_argument("--match", default="", help="optional source-path substring")
     parser.add_argument("--objects", action="store_true", help="emit ARM64 objects instead of only checking syntax")
+    parser.add_argument("--runtime", action="store_true", help="select the native Switch memory and cooperative context adapters")
     args = parser.parse_args()
     if args.jobs < 1:
         parser.error("--jobs must be positive")
@@ -77,6 +79,7 @@ def main():
     database = args.pc_build.resolve() / "compile_commands.json"
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
+    scheduler = prepare_scheduler(output / "generated") if args.runtime else None
     entries = json.loads(database.read_text())
     selected = []
     for entry in entries:
@@ -86,6 +89,9 @@ def main():
         source = Path(entry["file"]).resolve()
         if family and source.suffix == ".cpp" and args.match in str(source):
             selected.append((family, source, entry, arguments))
+    fiber = ROOT / "port/switch/runtime/fiber.cpp"
+    if args.runtime and args.match in str(fiber):
+        selected.append(("switch_runtime", fiber, {"directory": str(ROOT)}, [str(compiler), "-I" + str(ROOT / "tools/kazarov/include")]))
     if not selected:
         parser.error("No matching PC game/host sources found in the compile database")
     version = subprocess.check_output([str(compiler), "--version"], text=True).splitlines()[0]
@@ -93,9 +99,16 @@ def main():
               "-mtp=soft", "-D__SWITCH__", "-D__NINTENDO_SWITCH__", "-DNDEBUG",
               "-fsigned-char", "-ffp-contract=off", "-fno-strict-aliasing", "-fwrapv", "-fmax-errors=3", "-w",
               "-I" + str(sdk / "libnx/include"), "-I" + str(sdk / "portlibs/switch/include")]
+    if args.runtime:
+        common += ["-I" + str(ROOT / "port/switch")]
 
     def check(item):
         family, source, entry, arguments = item
+        original = source
+        if args.runtime and source == ROOT / "tools/kazarov/src/cpp/platform/memory.cpp":
+            source = ROOT / "port/switch/runtime/memory.cpp"
+        elif args.runtime and source == ROOT / "tools/kazarov/src/cpp/sce/eekernel_threads.cpp":
+            source = scheduler
         relative = source.relative_to(ROOT).as_posix()
         name = hashlib.sha256(relative.encode()).hexdigest()[:12] + "-" + source.stem + ".log"
         command = common + preprocessor_options(arguments) + [str(source)]
@@ -109,6 +122,7 @@ def main():
             code, diagnostic = 124, "compiler timeout after 90 seconds"
         (output / name).write_text(diagnostic, encoding="utf-8")
         return dict(family=family, source=relative, source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+                    original_source=original.relative_to(ROOT).as_posix(), runtime_adapter=source != original,
                     exit_code=code, blocker=None if code == 0 else diagnose(diagnostic), log=name, command=command)
 
     print(f"Switch {'object' if args.objects else 'syntax'} audit: {len(selected)} PC units, {args.jobs} workers", flush=True)
@@ -119,6 +133,7 @@ def main():
             if len(results) % 25 == 0 or len(results) == len(selected):
                 print(f"  {len(results)}/{len(selected)} checked; {sum(r['exit_code'] == 0 for r in results)} passed", flush=True)
     report = dict(compiler=version, pc_database=str(database), syntax_only=not args.objects,
+                  runtime_adapters=args.runtime,
                   note="PC-generated sources and header-only dependencies reused; no ARM libraries, link, NRO or hardware execution established.",
                   total=len(results), passed=sum(r["exit_code"] == 0 for r in results), results=results)
     (output / "report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")

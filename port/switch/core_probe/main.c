@@ -6,6 +6,13 @@ int ctSwitchMathChecks(void);
 int ctSwitchLogChecks(const char *save_root);
 const char *ctSwitchLogPath(void);
 #endif
+#ifdef CT_SWITCH_RUNTIME_PROBE
+int ctSwitchRuntimeChecks(void);
+void ctProbeProgress(const char *message) {
+    printf("%s\n", message);
+    consoleUpdate(NULL);
+}
+#endif
 
 int main(int argc, char **argv) {
     (void)argc;
@@ -16,8 +23,15 @@ int main(int argc, char **argv) {
     padInitializeDefault(&pad);
     int failures = ctSwitchMathChecks();
 #ifdef CT_SWITCH_LOG_PROBE
+#ifdef CT_SWITCH_RUNTIME_PROBE
+    printf("ChronicleTwo PC-to-Switch: runtime probe 0.3.0\n\n");
+    int logging_failures = ctSwitchLogChecks("sdmc:/switch/ChronicleTwo-PC-Switch/runtime-probe/saves");
+    int runtime_failures = ctSwitchRuntimeChecks();
+    printf("Runtime failure bits: 0x%02x\n", runtime_failures);
+#else
     printf("ChronicleTwo PC-to-Switch: logging probe\n\n");
     int logging_failures = ctSwitchLogChecks("sdmc:/switch/ChronicleTwo-PC-Switch/logging-probe/saves");
+#endif
     printf("\nLog file: %s\n", ctSwitchLogPath());
     printf("Logging failure bits: 0x%02x\n", logging_failures);
 #else
@@ -35,7 +49,11 @@ int main(int argc, char **argv) {
     }
     consoleExit(NULL);
 #ifdef CT_SWITCH_LOG_PROBE
+#ifdef CT_SWITCH_RUNTIME_PROBE
+    return failures || logging_failures || runtime_failures ? 1 : 0;
+#else
     return failures || logging_failures ? 1 : 0;
+#endif
 #else
     return failures ? 1 : 0;
 #endif
