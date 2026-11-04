@@ -1,3 +1,25 @@
+# ChronicleTwo PC-to-Switch
+
+Separate development repository for cross-compiling ChronicleTwo's native PC
+engine for Nintendo Switch. The goal is to run the recovered game code and
+existing native game loop on Switch, adapting the platform services and renderer.
+This is a source port, not translation of a compiled PC executable.
+
+## Starting point
+
+- ChronicleTwo: `cb910edeea375887aab8e00085b93150be4e081e`.
+- Kazarov: `14164f13fb4fcd4395009b81ba3f3208df1e52b3` (pinned submodule).
+- Source and history copied from the locally available upstream PC baseline.
+  These revisions have not been checked against the latest online upstream.
+- The separate scene-by-scene Switch prototype is not part of this branch.
+
+Repository setup is complete. A full Switch build and hardware execution are
+not yet implemented or verified. Inherited PC documentation describes the
+upstream project; it is not evidence of validation in this checkout.
+
+See [the Switch work plan](docs/PC_TO_SWITCH.md) for scope and milestones.
+The original documentation follows.
+
 # Chronicle Two
 
 [![PAL Progress]](https://decomp.dev/TheMoonPeople/ChronicleTwo/pal)
