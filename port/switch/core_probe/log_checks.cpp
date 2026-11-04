@@ -7,6 +7,7 @@
 #undef printf
 
 #include <algorithm>
+#include <cerrno>
 #include <cstdio>
 #include <fstream>
 #include <iterator>
@@ -76,15 +77,20 @@ extern "C" int ctSwitchLogChecks(const char *save_root) {
     CT_LOG_WARN(Main, "late record");
     const bool flushed = LogFlushForCrash(std::chrono::milliseconds(50)) && Has("ps2", "last partial") && Has("main", "late record");
     LogFlush();
+    // The Switch filesystem need not permit a second reader while the append handle is open.
+    // Preserve the path, close the writer through the public API, then verify persisted bytes.
+    LogSetCaptureHook(nullptr);
+    config.file = false;
+    LogApplyConfig(config);
+    errno = 0;
     std::ifstream input(PathsFromUtf8(g_path), std::ios::binary);
+    const bool readback_open = input.is_open();
+    const int readback_errno = errno;
     const std::string file{std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>()};
     const bool persisted = !g_path.empty() && file.find("before file 42") != std::string::npos &&
         file.find("probe session ") != std::string::npos && file.find("worker 1 record 15") != std::string::npos &&
         file.find("last partial") != std::string::npos && file.find("late record") != std::string::npos &&
         file.find("hidden") == std::string::npos;
-    LogSetCaptureHook(nullptr);
-    config.file = false;
-    LogApplyConfig(config);
     LogInit({});
     Result("filtering / formatting", filtered);
     Result("boot/category precedence", precedence);
@@ -93,6 +99,7 @@ extern "C" int ctSwitchLogChecks(const char *save_root) {
     Result("worker threads", threads);
     Result("shutdown / late / flush", flushed);
     Result("session file readback", persisted);
+    std::printf("Readback: open=%s bytes=%zu errno=%d\n", readback_open ? "yes" : "no", file.size(), readback_errno);
     return (!filtered ? 1 : 0) | (!precedence ? 2 : 0) | (!rate ? 4 : 0) | (!bridges ? 8 : 0) |
         (!threads ? 16 : 0) | (!flushed ? 32 : 0) | (!persisted ? 64 : 0);
 }

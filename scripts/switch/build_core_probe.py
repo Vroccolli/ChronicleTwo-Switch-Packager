@@ -74,7 +74,7 @@ def main():
     nacp = output / "probe.nacp"
     title = "ChronicleTwo PC-to-Switch logging probe" if args.logging else "ChronicleTwo PC-to-Switch core probe"
     run([sdk / "tools/bin" / ("nacptool" + suffix), "--create", title,
-         "ChronicleTwo contributors", "0.2.0" if args.logging else "0.1.0", nacp])
+         "ChronicleTwo contributors", "0.2.1" if args.logging else "0.1.0", nacp])
     run([sdk / "tools/bin" / ("elf2nro" + suffix), elf, nro,
          "--icon=" + str(sdk / "libnx/default_icon.jpg"), "--nacp=" + str(nacp)])
     nm = sdk / "devkitA64/bin" / ("aarch64-none-elf-nm" + suffix)

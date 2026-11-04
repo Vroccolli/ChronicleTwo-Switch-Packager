@@ -2,8 +2,30 @@
 
 The logging dependency blocker is removed. A real synchronous Switch backend
 now implements the existing logging API, and the logging diagnostic builds
-as an ARM64 NRO. It has not been sent to the Switch or tested on hardware.
+as an ARM64 NRO. Version 0.2.0 was uploaded and tested on hardware; its
+readback check failed as described below. The corrected 0.2.1 probe is prepared
+locally and still needs a hardware retest.
 Full game boot remains outside this checkpoint.
+
+## First hardware result and readback correction
+
+The console's Album capture `2026110416480900-5361907E67981C0712C80F39FBC192A1.jpg`
+(console timestamp 2026-11-04 16:48:09) shows six logging checks passing,
+session-file readback failing with `0x40`, and all math checks passing.
+The retrieved `darkchronicle-20261104-164803-b750.log` contains every required
+persisted marker and no filtered messages. File writing and worker delivery
+therefore have direct hardware evidence despite the probe's readback failure.
+
+The original probe attempted a second read handle while its append writer was
+still open. Version 0.2.1 disables file logging through the existing API before
+opening the independent reader, preserving all marker assertions, and prints
+the reader's open status, byte count and errno. This addresses a likely handle
+sharing/visibility issue; the precise original open/read failure was not
+instrumented, and the corrected behaviour is not yet hardware-confirmed.
+All 30 focused host checks pass after the correction. Captures, the retrieved
+log and `validation.json` are under the ignored
+`port/build/switch/logging-probe/hardware` directory. No files on the console
+were changed while fetching this evidence.
 
 ## What changed
 
