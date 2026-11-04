@@ -4,6 +4,8 @@ $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot/common.ps1"
 $root = Resolve-WindowsRoot $Root
 $source = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
+# MSYS tar treats a Windows drive prefix as a remote host. Use Windows bsdtar.
+$tar = Join-Path $env:SystemRoot 'System32/tar.exe'
 $version = '1.99.0'
 $triple = 'x86_64-pc-windows-gnullvm'
 $rustRoot = Join-Path $root 'deps/rust'
@@ -30,7 +32,7 @@ $rustArchive = Get-VerifiedArchive "$rustName.tar.xz" "$release/$rustName.tar.xz
 if (!(Test-Path -LiteralPath (Join-Path $prefix 'bin/rustc.exe')) -or
     !(Test-Path -LiteralPath (Join-Path $prefix 'bin/cargo.exe')) -or
     !(Test-Path -LiteralPath (Join-Path $prefix "lib/rustlib/$triple/lib"))) {
-    & tar -xf $rustArchive -C $stage "$rustName/rustc" "$rustName/cargo" "$rustName/rust-std-$triple"
+    & $tar -xf $rustArchive -C $stage "$rustName/rustc" "$rustName/cargo" "$rustName/rust-std-$triple"
     if ($LASTEXITCODE) { throw 'Rust archive extraction failed' }
     foreach ($component in @('rustc', 'cargo', "rust-std-$triple")) {
         $componentRoot = Join-Path $stage "$rustName/$component"
@@ -51,7 +53,7 @@ if (!$SkipRustfmt) {
     $fmtArchive = Get-VerifiedArchive "$fmtName.tar.xz" "$release/$fmtName.tar.xz" `
         '574D8389A6F73537357EDCCC2B6137BD934BC4E9351FD8BF5B0F5F5AA48B3C4B'
     if (!(Test-Path -LiteralPath (Join-Path $prefix 'bin/rustfmt.exe'))) {
-        & tar -xf $fmtArchive -C $stage
+        & $tar -xf $fmtArchive -C $stage
         if ($LASTEXITCODE) { throw 'rustfmt archive extraction failed' }
         Copy-Item -Path (Join-Path $stage "$fmtName/rustfmt-preview/bin/*") -Destination (Join-Path $prefix 'bin') -Force
     }
@@ -62,7 +64,7 @@ if (!$SkipClippy) {
     $clippyArchive = Get-VerifiedArchive "$clippyName.tar.xz" "$release/$clippyName.tar.xz" `
         'A6522090DC91603B1E1BAB5E65207DEF32487A49B76300D7DF2A3262E9A6F1BB'
     if (!(Test-Path -LiteralPath (Join-Path $prefix 'bin/cargo-clippy.exe'))) {
-        & tar -xf $clippyArchive -C $stage
+        & $tar -xf $clippyArchive -C $stage
         if ($LASTEXITCODE) { throw 'Clippy archive extraction failed' }
         Copy-Item -Path (Join-Path $stage "$clippyName/clippy-preview/bin/*") -Destination (Join-Path $prefix 'bin') -Force
     }

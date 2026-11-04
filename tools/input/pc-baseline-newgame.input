@@ -1,0 +1,18 @@
+# Normal boot, then New Game after the title has finished appearing.
+# Capture at frame 5200 with the PC baseline's default configuration.
+300 circle
+306
+320 cross
+326
+900 start
+906
+1200 circle
+1206
+1500 cross
+1506
+4050 start
+4056
+4250 start
+4256
+4450 cross
+4456
