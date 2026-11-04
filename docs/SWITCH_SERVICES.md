@@ -92,8 +92,7 @@ is the actual text entry at image offset zero. Version 0.4.1 obtains `_start`
 through PC-relative AArch64 instructions so the loaded image address includes
 ASLR. The base check and offset assertions are retained. The original report,
 capture and matching 0.4.0 ELF/build manifest are preserved under
-`port/build/switch/services-probe/hardware`. Corrected hardware execution is
-still pending.
+`port/build/switch/services-probe/hardware`. The corrected hardware result is recorded below.
 
 ## Completed build and link checks
 
@@ -128,4 +127,20 @@ Version 0.4.1 is uploaded to
 Readback matches 1,177,797 bytes and SHA-256
 `1d4bc0d6702cd4040209e83786467c877b9f751ebc9e6034edf491151466abb7`.
 Its disassembly resolves `_start` with `adrp`/`add`, without the old absolute
-symbol's zero-valued GOT entry. The hardware retest is pending.
+symbol's zero-valued GOT entry. The hardware retest passes as recorded below.
+
+## Verified 0.4.1 hardware retest
+
+The user reports all rows passing. Retrieved session
+`darkchronicle-20261104-175115-69f4.log` independently records all three services
+checks true and all eight runtime rows PASS. The console session timestamp is
+2026-11-04 17:51:15. `switch-last-report-0.4.1.txt` identifies the corrected
+build, records module base `0x67b2990000` and four raw frames. Every offset
+matches its raw address minus that base; the exact saved ELF resolves them to
+`ctCrashFrames`, `ctSwitchServicesChecks`, `main` and `exit`.
+
+Evidence and `validation-0.4.1.json` remain under the ignored hardware folder.
+The latest Album capture is still the earlier failing 0.4.0 image; the passing
+retest is supported by the user report and new on-device log/report, rather
+than a new screenshot. Raw CPU fault handling and return-to-menu remain
+outside this captured result.

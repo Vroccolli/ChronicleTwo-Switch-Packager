@@ -17,7 +17,8 @@ blockers, passing 426/426 syntax and object checks with explicit adapters.
 The real engine link reports 299 unresolved names across graphics, SDL3,
 movie/script/data libraries and smaller dependencies, plus a newlib/game
 `__assert` collision. Probe 0.4.0 passed persistence/redaction but failed its
-module-offset check; the corrected 0.4.1 is uploaded and awaits a hardware retest.
+module-offset check; the corrected 0.4.1 passes, verified from its new log/report
+and the user result.
 
 ## Initial ARM64 compilation audit (before logging bring-up)
 
