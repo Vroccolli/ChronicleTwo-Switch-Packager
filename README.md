@@ -13,9 +13,11 @@ This is a source port, not translation of a compiled PC executable.
   These revisions have not been checked against the latest online upstream.
 - The separate scene-by-scene Switch prototype is not part of this branch.
 
-Repository setup is complete. A full Switch build and hardware execution are
-not yet implemented or verified. Inherited PC documentation describes the
-upstream project; it is not evidence of validation in this checkout.
+The [PC baseline](docs/PC_BASELINE_2026-11-04.md) builds and renders the title,
+opening, town and first dungeon. Launch the prepared local build with
+`./run-pc.ps1`. The [Switch work](docs/SWITCH_STATUS.md) has a compiler audit
+and a buildable core-math diagnostic NRO. A full Switch game build and
+hardware execution are not yet established.
 
 See [the Switch work plan](docs/PC_TO_SWITCH.md) for scope and milestones.
 The original documentation follows.

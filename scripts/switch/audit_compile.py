@@ -1,0 +1,133 @@
+"""Compile-audit the PC target's real source list with devkitA64; never link or deploy."""
+from __future__ import annotations
+
+import argparse
+from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
+import ctypes
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import shlex
+import subprocess
+
+
+ROOT = Path(__file__).resolve().parents[2]
+FAMILIES = ("ct_ps2", "ct_port", "ct_port_bridge", "ct_host", "darkchronicle")
+
+
+def split_command(command):
+    if os.name != "nt":
+        return shlex.split(command)
+    count = ctypes.c_int()
+    split = ctypes.windll.shell32.CommandLineToArgvW
+    split.argtypes = [ctypes.c_wchar_p, ctypes.POINTER(ctypes.c_int)]
+    split.restype = ctypes.POINTER(ctypes.c_wchar_p)
+    pointer = split(command, ctypes.byref(count))
+    if not pointer:
+        raise OSError("CommandLineToArgvW failed")
+    try:
+        return [pointer[i] for i in range(count.value)]
+    finally:
+        ctypes.windll.kernel32.LocalFree(ctypes.cast(pointer, ctypes.c_void_p))
+
+
+def preprocessor_options(arguments):
+    result = []
+    index = 1
+    while index < len(arguments):
+        arg = arguments[index]
+        if arg in ("-I", "-isystem", "-include", "-D", "-U"):
+            value = arguments[index + 1]
+            if arg != "-D" or not re.match(r"(?:WINVER|_WIN32_WINNT|KZ_PORT_TRACY|TRACY_)", value):
+                result.extend((arg, value))
+            index += 2
+            continue
+        if arg.startswith(("-I", "-D", "-U")) and not re.match(
+            r"-D(?:WINVER|_WIN32_WINNT|KZ_PORT_TRACY|TRACY_)", arg
+        ):
+            result.append(arg)
+        index += 1
+    return result
+
+
+def diagnose(text):
+    missing = re.search(r"fatal error: ([^\r\n]+): No such file or directory", text)
+    if missing:
+        return "missing header: " + missing[1]
+    error = re.search(r"(?:fatal )?error: ([^\r\n]+)", text)
+    return error[1] if error else "compiler failed (see log)"
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--pc-build", type=Path, default=ROOT / "port/build/windows-x64-release")
+    parser.add_argument("--devkitpro", type=Path, default=Path("C:/devkitPro"))
+    parser.add_argument("--output", type=Path, default=ROOT / "port/build/switch-audit")
+    parser.add_argument("--jobs", type=int, default=4)
+    parser.add_argument("--match", default="", help="optional source-path substring")
+    parser.add_argument("--objects", action="store_true", help="emit ARM64 objects instead of only checking syntax")
+    args = parser.parse_args()
+    if args.jobs < 1:
+        parser.error("--jobs must be positive")
+    sdk = args.devkitpro.resolve()
+    compiler = sdk / "devkitA64/bin" / ("aarch64-none-elf-g++.exe" if os.name == "nt" else "aarch64-none-elf-g++")
+    database = args.pc_build.resolve() / "compile_commands.json"
+    output = args.output.resolve()
+    output.mkdir(parents=True, exist_ok=True)
+    entries = json.loads(database.read_text())
+    selected = []
+    for entry in entries:
+        arguments = entry.get("arguments") or split_command(entry["command"])
+        command = " ".join(arguments).replace("\\", "/")
+        family = next((name for name in FAMILIES if f"CMakeFiles/{name}.dir/" in command), None)
+        source = Path(entry["file"]).resolve()
+        if family and source.suffix == ".cpp" and args.match in str(source):
+            selected.append((family, source, entry, arguments))
+    if not selected:
+        parser.error("No matching PC game/host sources found in the compile database")
+    version = subprocess.check_output([str(compiler), "--version"], text=True).splitlines()[0]
+    common = [str(compiler), "-std=gnu++26", "-c" if args.objects else "-fsyntax-only", "-march=armv8-a+crc+crypto",
+              "-mtp=soft", "-D__SWITCH__", "-D__NINTENDO_SWITCH__", "-DNDEBUG",
+              "-fsigned-char", "-ffp-contract=off", "-fno-strict-aliasing", "-fwrapv", "-fmax-errors=3", "-w",
+              "-I" + str(sdk / "libnx/include"), "-I" + str(sdk / "portlibs/switch/include")]
+
+    def check(item):
+        family, source, entry, arguments = item
+        relative = source.relative_to(ROOT).as_posix()
+        name = hashlib.sha256(relative.encode()).hexdigest()[:12] + "-" + source.stem + ".log"
+        command = common + preprocessor_options(arguments) + [str(source)]
+        if args.objects:
+            command.extend(("-o", str(output / name.replace(".log", ".o"))))
+        try:
+            process = subprocess.run(command, cwd=entry["directory"], capture_output=True,
+                                     text=True, errors="replace", timeout=90)
+            code, diagnostic = process.returncode, process.stdout + process.stderr
+        except subprocess.TimeoutExpired:
+            code, diagnostic = 124, "compiler timeout after 90 seconds"
+        (output / name).write_text(diagnostic, encoding="utf-8")
+        return dict(family=family, source=relative, source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+                    exit_code=code, blocker=None if code == 0 else diagnose(diagnostic), log=name, command=command)
+
+    print(f"Switch {'object' if args.objects else 'syntax'} audit: {len(selected)} PC units, {args.jobs} workers", flush=True)
+    results = []
+    with ThreadPoolExecutor(max_workers=args.jobs) as pool:
+        for result in pool.map(check, selected):
+            results.append(result)
+            if len(results) % 25 == 0 or len(results) == len(selected):
+                print(f"  {len(results)}/{len(selected)} checked; {sum(r['exit_code'] == 0 for r in results)} passed", flush=True)
+    report = dict(compiler=version, pc_database=str(database), syntax_only=not args.objects,
+                  note="PC-generated sources and header-only dependencies reused; no ARM libraries, link, NRO or hardware execution established.",
+                  total=len(results), passed=sum(r["exit_code"] == 0 for r in results), results=results)
+    (output / "report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+    blockers = Counter(r["blocker"] for r in results if r["exit_code"])
+    for reason, count in blockers.most_common(12):
+        print(f"  {count}: {reason}", flush=True)
+    print(f"Report: {output / 'report.json'}", flush=True)
+    return 1 if blockers else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

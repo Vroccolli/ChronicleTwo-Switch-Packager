@@ -49,6 +49,12 @@ publishing remote is configured for this new project.
 
 ## Current status
 
-Only repository initialization and planning are complete. No Switch compiler
-audit, PC baseline run, full engine build or hardware validation has been done
-in this new checkout. The first implementation task is milestone 1.
+The [PC baseline](PC_BASELINE_2026-11-04.md) now builds and renders bounded
+title, opening, town and dungeon checkpoints. New Game confirmation remains
+unverified. The CPU test selection passes after isolated retries, with
+data-dependent skips recorded.
+
+Milestone 2 has started: the PC compile database drives a devkitA64 source
+audit, and real game math units link into a small diagnostic NRO. See
+[Switch status and build commands](SWITCH_STATUS.md). The complete engine,
+Switch renderer and hardware execution are not yet established.
