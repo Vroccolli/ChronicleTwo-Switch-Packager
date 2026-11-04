@@ -57,11 +57,11 @@ data-dependent skips recorded.
 Milestone 2 has started: the PC compile database drives a devkitA64 source
 audit, and real game math units link into a small diagnostic NRO. See
 [Switch status and build commands](SWITCH_STATUS.md). The complete engine,
-Switch renderer and hardware execution are not yet established.
+Switch renderer and full-game hardware execution are not yet established.
 
 The [logging checkpoint](SWITCH_LOGGING.md) removes Quill's desktop dependency
 from Switch consumers, passes 30 focused host checks and builds a logging NRO
-with a concrete SD-card test. The updated audit parses 387/424 units. Arena
+whose 0.2.1 SD-card test now passes on hardware. The updated audit parses 387/424 units. Arena
 memory, cooperative contexts and crash-platform services remain to be adapted.
 
 ## Diagnostic deployment preference

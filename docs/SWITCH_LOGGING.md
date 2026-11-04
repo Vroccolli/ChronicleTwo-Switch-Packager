@@ -3,9 +3,26 @@
 The logging dependency blocker is removed. A real synchronous Switch backend
 now implements the existing logging API, and the logging diagnostic builds
 as an ARM64 NRO. Version 0.2.0 was uploaded and tested on hardware; its
-readback check failed as described below. The corrected 0.2.1 probe was uploaded
-and verified by size and SHA-256, and still needs a hardware retest.
+readback check failed as described below. The corrected 0.2.1 probe was uploaded,
+verified by size and SHA-256, and passed the hardware retest.
 Full game boot remains outside this checkpoint.
+
+## Verified hardware retest
+
+Album capture `2026110416552000-5361907E67981C0712C80F39FBC192A1.jpg`
+(console timestamp 2026-11-04 16:55:20) shows all seven logging rows PASS,
+`Logging failure bits: 0x00`, successful 3,389-byte readback, math PASS and zero
+failed math comparisons. Retrieved log
+`darkchronicle-20261104-165516-6188.log` is exactly 3,389 bytes and contains
+all required markers, all 32 distinct worker records, and no filtered messages.
+The readback failure is resolved for this tested Switch run. Return-to-menu
+behaviour was not independently observed in the capture.
+
+The device's capture/session clock is recorded as shown, without assuming it
+matches the host clock. The verified uploaded NRO SHA-256 is
+`c815d027317a0401a19883228d31ececf129abcee63ebff02d552bd083c12e8f`.
+`hardware/validation-0.2.1.json` records the bounded hardware result alongside
+the preserved capture and log.
 
 ## First hardware result and readback correction
 
@@ -21,7 +38,8 @@ still open. Version 0.2.1 disables file logging through the existing API before
 opening the independent reader, preserving all marker assertions, and prints
 the reader's open status, byte count and errno. This addresses a likely handle
 sharing/visibility issue; the precise original open/read failure was not
-instrumented, and the corrected behaviour is not yet hardware-confirmed.
+instrumented. The subsequent hardware retest above confirms that closing the
+writer before readback resolves the probe failure on the tested console.
 All 30 focused host checks pass after the correction. Captures, the retrieved
 log and `validation.json` are under the ignored
 `port/build/switch/logging-probe/hardware` directory. No files on the console

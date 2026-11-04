@@ -2,9 +2,9 @@
 
 Core math and [logging diagnostic NROs](SWITCH_LOGGING.md) build. Logging now
 has a real Switch backend; its updated audit is 387/424 and focused host
-checks pass 30/30. The full game engine does not yet build or
-run on Switch. No hardware execution or deployment has been performed for
-this repository.
+checks pass 30/30. The 0.2.1 logging/math probe was deployed and passed its
+bounded hardware checks, verified from the screenshot and saved log. The full
+game engine does not yet build or run on Switch.
 
 ## Initial ARM64 compilation audit (before logging bring-up)
 
