@@ -23,6 +23,9 @@ checks. Their 0.3.0 runtime diagnostic passes all bounded checks on Switch hardw
 The [GCC/services checkpoint](docs/SWITCH_SERVICES.md) compiles all 426 audited
 units into ARM64 objects. Engine linking now exposes concrete library gaps.
 Services probe 0.4.1 passes its bounded hardware retest, verified from its log/report.
+The active [library/renderer integration](docs/SWITCH_INTEGRATION.md) clears the
+assertion collision and builds native libraries. The Mesa/NVK capability probe
+passes on Switch; real renderer probe 0.6.0 is uploaded for hardware validation.
 A full Switch game build and full-game hardware execution are not yet established.
 
 See [the Switch work plan](docs/PC_TO_SWITCH.md) for scope and milestones.

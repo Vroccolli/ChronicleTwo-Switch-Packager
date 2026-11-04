@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.22)
 project(chronicletwo NONE)
 
 # PLATFORM picks what is built: PS2 builds and verifies the retail executable
-# (ps2/CMakeLists.txt), PC builds the native port, SWITCH builds the bounded core probe.
+# (ps2/CMakeLists.txt), PC builds the native port, SWITCH orchestrates ARM64
+# diagnostics and the native game build through the installed SDK.
 set(PLATFORM PS2 CACHE STRING "Platform to build: PS2, PC or SWITCH")
 set_property(CACHE PLATFORM PROPERTY STRINGS PS2 PC SWITCH)
 if(PLATFORM STREQUAL "PS2")

@@ -43,12 +43,12 @@ def preprocessor_options(arguments):
         arg = arguments[index]
         if arg in ("-I", "-isystem", "-include", "-D", "-U"):
             value = arguments[index + 1]
-            if arg != "-D" or not re.match(r"(?:WINVER|_WIN32_WINNT|KZ_PORT_TRACY|TRACY_)", value):
+            if arg != "-D" or not re.match(r"(?:WINVER|_WIN32_WINNT|KZ_PORT_TRACY|CT_ENABLE_TRACY|TRACY_)", value):
                 result.extend((arg, value))
             index += 2
             continue
         if arg.startswith(("-I", "-D", "-U")) and not re.match(
-            r"-D(?:WINVER|_WIN32_WINNT|KZ_PORT_TRACY|TRACY_)", arg
+            r"-D(?:WINVER|_WIN32_WINNT|KZ_PORT_TRACY|CT_ENABLE_TRACY|TRACY_)", arg
         ):
             result.append(arg)
         index += 1
@@ -73,7 +73,8 @@ def main():
     parser.add_argument("--objects", action="store_true", help="emit ARM64 objects instead of only checking syntax")
     parser.add_argument("--runtime", action="store_true", help="select the native Switch memory and cooperative context adapters")
     parser.add_argument("--linkage", action="store_true", help="externalize only stub-exported names in generated GCC source copies")
-    parser.add_argument("--services", action="store_true", help="select runtime, GCC linkage and controlled-crash adapters")
+    parser.add_argument("--services", action="store_true", help="select native runtime/data services, GCC linkage and controlled-crash adapters")
+    parser.add_argument("--media-headers", type=Path, help="compile the movie backend against matching Switch FFmpeg headers")
     args = parser.parse_args()
     args.runtime = args.runtime or args.services
     args.linkage = args.linkage or args.services
@@ -97,6 +98,9 @@ def main():
     fiber = ROOT / "port/switch/runtime/fiber.cpp"
     if args.runtime and args.match in str(fiber):
         selected.append(("switch_runtime", fiber, {"directory": str(ROOT)}, [str(compiler), "-I" + str(ROOT / "tools/kazarov/include")]))
+    archive_source = ROOT / "port/switch/data/archive.cpp"
+    if args.services and args.match in str(archive_source):
+        selected.append(("switch_data", archive_source, {"directory": str(ROOT)}, [str(compiler)]))
     common_crash = ROOT / "port/src/crash/crash_common.cpp"
     if args.services and args.match in str(common_crash) and not any(item[1] == common_crash for item in selected):
         selected.append(("ct_port", common_crash, {"directory": str(ROOT)}, [str(compiler), "-I" + str(ROOT / "port/src")]))
@@ -125,9 +129,24 @@ def main():
             crash_adapters = {"crash.cpp": "crash.cpp", "crash_report.cpp": "report.cpp", "crash_symbols.cpp": "symbols.cpp"}
             if source.parent == ROOT / "port/src/crash" and source.name in crash_adapters:
                 source = ROOT / "port/switch/crash" / crash_adapters[source.name]
+            if source == ROOT / "port/src/platform/legacy_encoding.cpp":
+                source = ROOT / "port/switch/data/encoding.cpp"
         relative = source.relative_to(ROOT).as_posix()
         name = hashlib.sha256(relative.encode()).hexdigest()[:12] + "-" + source.stem + ".log"
-        command = common + preprocessor_options(arguments) + [str(source)]
+        options = preprocessor_options(arguments)
+        if args.media_headers:
+            kept, index = [], 0
+            while index < len(options):
+                option = options[index]
+                if option in ("-I", "-isystem") and "/.kazarov/windows/deps/ffmpeg/" in options[index+1].replace("\\", "/"):
+                    index += 2
+                    continue
+                if option.startswith("-I") and "/.kazarov/windows/deps/ffmpeg/" in option.replace("\\", "/"):
+                    index += 1
+                    continue
+                kept.append(option); index += 1
+            options = ["-I" + str(args.media_headers.resolve())] + kept
+        command = common + options + [str(source)]
         if args.objects:
             command.extend(("-o", str(output / name.replace(".log", ".o"))))
         try:
@@ -152,6 +171,8 @@ def main():
                   runtime_adapters=args.runtime,
                   linkage_adapter=args.linkage,
                   controlled_crash_adapter=args.services,
+                  native_data_adapter=args.services,
+                  media_headers=str(args.media_headers.resolve()) if args.media_headers else None,
                   note="PC-generated sources and header-only dependencies reused; no ARM libraries, link, NRO or hardware execution established.",
                   total=len(results), passed=sum(r["exit_code"] == 0 for r in results), results=results)
     (output / "report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")

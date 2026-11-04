@@ -1,6 +1,8 @@
 #include "lua.h"
 #include "luacode.h"
+#ifndef __SWITCH__
 #include "luacodegen.h"
+#endif
 #include "lualib.h"
 
 #include <algorithm>
@@ -676,9 +678,9 @@ bool PushModuleFunction(lua_State *lua, const std::filesystem::path &file, std::
         lua_pop(lua, 1);
         return false;
     }
-    if (codegen) {
-        luau_codegen_compile(lua, -1);
-    }
+#ifndef __SWITCH__
+    if (codegen) luau_codegen_compile(lua, -1);
+#endif
     CT_LOG_INFO(Script, "luau: compiled {}", PathsDisplay(file));
 
     lua_getref(lua, module_cache_ref);
@@ -785,10 +787,16 @@ lua_State *EnsureState() {
     lua_pop(state, 1);
 
     luaL_sandbox(state);
+#ifndef __SWITCH__
     codegen = luau_codegen_supported() != 0;
     if (codegen) {
         luau_codegen_create(state);
     }
+#else
+    // Horizon's ordinary heap is not executable. Keep the real Luau bytecode
+    // compiler and interpreter; executable-memory/JIT support is separate work.
+    codegen = false;
+#endif
     CT_LOG_INFO(Script, "luau: native code generation {}", codegen ? "on" : "off");
     return state;
 }

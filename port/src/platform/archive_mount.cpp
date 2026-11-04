@@ -1,10 +1,19 @@
+#ifdef __SWITCH__
+#include "data/archive.hpp"
+namespace archive_api = ct::archive;
+namespace archive_types = ct::archive;
+#else
 #include "kazarov_bridge/rust/lib.h"
+namespace archive_api = kazarov;
+namespace archive_types = rust;
+#endif
 
 #include <cstdint>
 #include <exception>
 #include <fstream>
 #include <limits>
 #include <mutex>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -34,12 +43,12 @@ public:
         CT_PROFILE_ZONE("Open asset archive");
         const auto text = Utf8(path);
         try {
-            archive_.emplace(kazarov::open_archive(rust::Str(text.data(), text.size())));
+            archive_.emplace(archive_api::open_archive(archive_types::Str(text.data(), text.size())));
         } catch (const std::exception &error) {
             throw std::runtime_error(error.what());
         }
         const auto &archive = **archive_;
-        const auto  count = kazarov::archive_entry_count(archive);
+        const auto  count = archive_api::archive_entry_count(archive);
         entries_.resize(count);
         index_.reserve(count);
         std::error_code error;
@@ -49,12 +58,12 @@ public:
                                  std::to_string(error ? 0 : static_cast<long long>(time.time_since_epoch().count())) + '|';
         for (std::size_t index = 0; index < count; ++index) {
             auto      &entry = entries_[index];
-            const auto name = kazarov::archive_entry_name(archive, index);
+            const auto name = archive_api::archive_entry_name(archive, index);
             entry.name.assign(name.data(), name.size());
-            entry.size = kazarov::archive_entry_size(archive, index);
-            entry.stored = kazarov::archive_entry_stored(archive, index);
-            entry.offset = kazarov::archive_entry_data_offset(archive, index);
-            entry.stamp = prefix + std::to_string(kazarov::archive_entry_crc(archive, index)) + '|' +
+            entry.size = archive_api::archive_entry_size(archive, index);
+            entry.stored = archive_api::archive_entry_stored(archive, index);
+            entry.offset = archive_api::archive_entry_data_offset(archive, index);
+            entry.stamp = prefix + std::to_string(archive_api::archive_entry_crc(archive, index)) + '|' +
                           std::to_string(entry.size) + '|' + std::to_string(entry.offset);
             if (!index_.emplace(vfs::FoldKey(entry.name), index).second) {
                 throw std::runtime_error("paths differ only by ASCII case: " + entry.name);
@@ -99,7 +108,7 @@ public:
         }
         CT_PROFILE_TEXT(entries_[index].name.data(), entries_[index].name.size());
         try {
-            kazarov::archive_read_entry(**archive_, index, rust::Slice<std::uint8_t>(static_cast<std::uint8_t *>(buffer), size));
+            archive_api::archive_read_entry(**archive_, index, archive_types::Slice<std::uint8_t>(static_cast<std::uint8_t *>(buffer), size));
             return true;
         } catch (const std::exception &) {
             return false;
@@ -187,7 +196,7 @@ private:
 
     fs::path                                                           file_;         /**< Archive file. */
     std::string                                                        label_;        /**< Archive filename shown in diagnostics. */
-    std::optional<rust::Box<kazarov::Archive> >                        archive_;      /**< Open archive. */
+    std::optional<archive_types::Box<archive_api::Archive> >                        archive_;      /**< Open archive. */
     std::vector<Entry>                                                 entries_;      /**< Entries in central-directory order. */
     std::unordered_map<std::string, std::size_t>                       index_;        /**< Folded names mapped to entries. */
     mutable std::mutex                                                 prefix_mutex_; /**< Guards prefix_file_. */

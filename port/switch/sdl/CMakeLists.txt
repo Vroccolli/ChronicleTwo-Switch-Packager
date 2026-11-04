@@ -1,0 +1,21 @@
+cmake_minimum_required(VERSION 3.25)
+project(chronicletwo_switch_sdl LANGUAGES C CXX)
+get_filename_component(CT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../.." ABSOLUTE)
+if(NOT CT_SWITCH_PLATFORM AND NOT CMAKE_SYSTEM_NAME STREQUAL "NintendoSwitch")
+    message(FATAL_ERROR "A Switch cross toolchain is required")
+endif()
+set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+set(SDL_STATIC ON CACHE BOOL "" FORCE)
+set(SDL_TESTS OFF CACHE BOOL "" FORCE)
+set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
+set(SDL_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(SDL_GPU OFF CACHE BOOL "" FORCE)
+set(SDL_RENDER OFF CACHE BOOL "" FORCE)
+# Header presence alone is not enough: libnx has no POSIX sigaction entry.
+# SDL's native Switch event pump receives process exit through appletMainLoop.
+set(HAVE_SIGACTION OFF CACHE INTERNAL "No libnx POSIX sigaction" FORCE)
+set(HAVE_FDATASYNC OFF CACHE INTERNAL "Use libsysbase fsync on Switch" FORCE)
+add_subdirectory("${CT_ROOT}/.kazarov/switch/deps/SDL-release-3.4.18" sdl)
+target_sources(SDL3-static PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/vulkan.c")
+file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/library.json" CONTENT
+    "{\"platform\":\"NintendoSwitch\",\"archives\":[\"$<TARGET_FILE:SDL3-static>\"]}\n")

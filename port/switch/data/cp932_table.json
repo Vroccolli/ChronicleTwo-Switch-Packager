@@ -1,0 +1,8 @@
+{
+  "codepage": 932,
+  "decoder_flags": "MB_ERR_INVALID_CHARS",
+  "encoder_flags": "WC_NO_BEST_FIT_CHARS; reject substitution",
+  "decode_entries": 9795,
+  "encode_entries": 9401,
+  "sha256": "f85bd09c3e9da775a9431e7a157a874ec5da473773df923e2664eaf219628fe6"
+}

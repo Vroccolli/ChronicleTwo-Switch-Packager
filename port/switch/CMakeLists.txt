@@ -34,3 +34,15 @@ add_custom_target(switch_engine_link_check
         --output "${CMAKE_BINARY_DIR}/engine-link" --jobs 4
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     COMMENT "Compiling engine ARM64 objects and reporting actual link dependencies")
+add_custom_target(switch_vulkan_probe
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/switch/build_vulkan_probe.py"
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    COMMENT "Building real engine capability checks against the Switch Vulkan driver")
+add_custom_target(switch_renderer_probe
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/switch/build_renderer_probe.py"
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    COMMENT "Building the real renderer and native Switch presentation probe")
+add_custom_target(switch_game
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/switch/build_game.py"
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    COMMENT "Building the complete native Switch engine and NRO")

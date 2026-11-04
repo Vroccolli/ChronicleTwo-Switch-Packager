@@ -16,6 +16,17 @@ extern "C" [[noreturn]] void __assert(const char *file, int line, const char *ex
     CrashReportAndExit(CrashKind::Assert, std::format("{}:{}: assertion failed: {}", file, line, expression), kExitGameAssert);
 }
 
+#ifdef __SWITCH__
+// Newlib keeps both assertion entry points in one archive member. Supply its
+// four-argument entry too, routing SDK assertions into the same report path,
+// so linking it cannot also pull in a second definition of __assert.
+extern "C" [[noreturn]] void __assert_func(const char *file, int line, const char *function, const char *expression) {
+    std::fflush(stdout);
+    CrashReportAndExit(CrashKind::Assert,
+        std::format("{}:{}: {}: assertion failed: {}", file, line, function ? function : "?", expression), kExitGameAssert);
+}
+#endif
+
 // glibc declares these noexcept; Apple's libc and the Windows CRT do not.
 #if defined(__APPLE__) || defined(_WIN32)
 #define LIBC_NOEXCEPT

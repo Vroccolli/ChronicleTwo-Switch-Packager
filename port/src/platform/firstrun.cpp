@@ -1,4 +1,6 @@
+#ifndef __SWITCH__
 #include "kazarov_bridge/rust/lib.h"
+#endif
 
 #include <SDL3/SDL.h>
 #include <nlohmann/json.hpp>
@@ -67,6 +69,7 @@ void FirstRunRequireData(const fs::path &root, bool headless) {
     const std::string text = FirstRunDataMessage(root);
     // The logger ends each line itself.
     CT_LOG_ERROR(Main, "{}", std::string_view(text).substr(0, text.ends_with('\n') ? text.size() - 1 : text.size()));
+#ifndef __SWITCH__
     if (!headless) {
         try {
             const auto path = root.u8string();
@@ -80,6 +83,9 @@ void FirstRunRequireData(const fs::path &root, bool headless) {
             SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Dark Chronicle", error.what(), nullptr);
         }
     }
+#else
+    static_cast<void>(headless); // Prepared PC assets are required on Switch; no desktop extractor GUI.
+#endif
     LogFlush();
     std::exit(kExitNoData);
 }

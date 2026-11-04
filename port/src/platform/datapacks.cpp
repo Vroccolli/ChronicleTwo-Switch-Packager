@@ -22,7 +22,9 @@
 
 #define STBI_ONLY_PNG
 #define STBI_NO_STDIO
+#ifndef __SWITCH__
 #include "kazarov_bridge/rust/lib.h"
+#endif
 #include "stb_image.h"
 
 #include "log/log.hpp"
@@ -321,6 +323,7 @@ bool DecodePng(std::span<const uint8_t> bytes, uint32_t &width, uint32_t &height
     }
     // The bridge's decoder inflates several times faster than stb_image; stb_image still reads what it rejects.
     rgba.resize(static_cast<std::size_t>(width) * height * 4);
+#ifndef __SWITCH__
     try {
         kazarov::png_decode_rgba(rust::Slice<const uint8_t>(bytes.data(), bytes.size()), width, height,
                                  rust::Slice<uint8_t>(rgba.data(), rgba.size()));
@@ -330,6 +333,7 @@ bool DecodePng(std::span<const uint8_t> bytes, uint32_t &width, uint32_t &height
     } catch (const std::exception &) {
         Trace("png bridge rejections");
     }
+#endif
     int            decoded_width = 0;
     int            decoded_height = 0;
     int            channels = 0;

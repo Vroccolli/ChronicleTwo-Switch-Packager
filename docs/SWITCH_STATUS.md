@@ -22,6 +22,10 @@ and the user result.
 
 ## Initial ARM64 compilation audit (before logging bring-up)
 
+For the active assertion/library/renderer goal and Mesa/NVK hardware result,
+see [the integration checkpoint](SWITCH_INTEGRATION.md). The original audit
+below is retained as the historical starting point.
+
 `scripts/switch/audit_compile.py` reads the existing PC compile database and
 checks the actual generated game sources, native overrides, bridge consumers,
 entry point and shared host sources with devkitA64 GCC 16.1.0 and GNU C++26.

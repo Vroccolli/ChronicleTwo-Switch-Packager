@@ -39,6 +39,9 @@
 #include "test_hooks.hpp"
 
 int VSyncCallBack(int field);
+#ifdef __SWITCH__
+extern "C" void ctSwitchBootstrap();
+#endif
 
 namespace {
 
@@ -437,7 +440,21 @@ int Run(int argc, const char **argv) {
 } // namespace
 
 PORT_OVERRIDE int main(int argc, const char **argv) {
+#ifdef __SWITCH__
+    ctSwitchBootstrap();
+    // Default to this port's own SD directory. Explicit launch arguments occur
+    // later, so the existing option parser still honors user overrides.
+    std::vector<const char *> args;
+    args.push_back(argc>0 && argv[0] ? argv[0] : "chronicletwo.nro");
+    args.push_back("--run-dir");
+    args.push_back("sdmc:/switch/ChronicleTwo-PC-Switch/game");
+    for (int i=1;i<argc;++i) args.push_back(argv[i]);
+    const auto count=static_cast<int>(args.size());
+    args.push_back(nullptr);
+    return Run(count,args.data());
+#else
     return Run(argc, argv);
+#endif
 }
 
 #ifdef _WIN32
