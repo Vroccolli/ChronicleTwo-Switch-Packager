@@ -179,4 +179,4 @@ ctest --test-dir port/build/logging-tests --output-on-failure -j4
 ```
 
 The [arena memory and cooperative context checkpoint](SWITCH_RUNTIME.md) now
-has an implementation and an uploaded 0.3.0 diagnostic awaiting hardware testing.
+has an implementation and a 0.3.0 diagnostic that passes its bounded hardware checks.

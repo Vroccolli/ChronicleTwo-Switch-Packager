@@ -2,7 +2,7 @@
 
 The new adapters implement the existing Kazarov arena interface and supply an
 ARM64 context backend for its existing PS2 cooperative scheduler. The runtime
-diagnostic 0.3.0 builds and is uploaded. Hardware execution remains pending.
+diagnostic 0.3.0 builds and passes its bounded hardware checks.
 
 ## Implementation
 
@@ -88,3 +88,18 @@ checker verifies callee-saved registers after yielding. Logs are under
 `sd:/switch/ChronicleTwo-PC-Switch/runtime-probe/logs`. The probe does not
 load retail assets or game saves. Hardware results must be recorded separately
 from successful build and transfer.
+
+## Verified hardware result
+
+The latest Album capture, console timestamp 2026-11-04 17:20:40, shows
+version 0.3.0 with all eight runtime checks PASS, zero ABI/stack/FP errors,
+Runtime and Logging failure bits both `0x00`, and zero failed math comparisons.
+The saved log independently contains all eight runtime PASS records.
+Evidence is retained under `port/build/switch/runtime-probe/hardware`:
+
+- `2026110417204000-5361907E67981C0712C80F39FBC192A1.jpg`
+- `darkchronicle-20261104-172038-39ac.log`
+
+This validates the bounded memory and ARM64 cooperative-context diagnostic.
+Full-engine execution, sustained gameplay memory demand and return via + are
+not established by this screenshot.
