@@ -10,9 +10,14 @@ The [runtime checkpoint](SWITCH_RUNTIME.md) adds arena memory and ARM64
 cooperative contexts, with 28/28 host checks passing. The adapted syntax audit
 now passes 390/425 units. Its 0.3.0 diagnostic has been uploaded and verified
 by download/hash comparison. All eight runtime checks now pass on hardware,
-with zero ABI, stack and floating-point errors; logging and math also pass. Remaining first
-errors are 32 GCC linkage conflicts, two `dlfcn.h` consumers and one
-crash-handler `sys/mman.h` dependency.
+with zero ABI, stack and floating-point errors; logging and math also pass.
+
+The [GCC/services checkpoint](SWITCH_SERVICES.md) now clears those compilation
+blockers, passing 426/426 syntax and object checks with explicit adapters.
+The real engine link reports 299 unresolved names across graphics, SDL3,
+movie/script/data libraries and smaller dependencies, plus a newlib/game
+`__assert` collision. Probe 0.4.0 passed persistence/redaction but failed its
+module-offset check; the corrected 0.4.1 is uploaded and awaits a hardware retest.
 
 ## Initial ARM64 compilation audit (before logging bring-up)
 

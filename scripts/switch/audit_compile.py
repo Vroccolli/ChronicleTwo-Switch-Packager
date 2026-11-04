@@ -13,6 +13,7 @@ import re
 import shlex
 import subprocess
 from prepare_runtime import prepare_scheduler
+from prepare_sources import prepare_source
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -71,7 +72,11 @@ def main():
     parser.add_argument("--match", default="", help="optional source-path substring")
     parser.add_argument("--objects", action="store_true", help="emit ARM64 objects instead of only checking syntax")
     parser.add_argument("--runtime", action="store_true", help="select the native Switch memory and cooperative context adapters")
+    parser.add_argument("--linkage", action="store_true", help="externalize only stub-exported names in generated GCC source copies")
+    parser.add_argument("--services", action="store_true", help="select runtime, GCC linkage and controlled-crash adapters")
     args = parser.parse_args()
+    args.runtime = args.runtime or args.services
+    args.linkage = args.linkage or args.services
     if args.jobs < 1:
         parser.error("--jobs must be positive")
     sdk = args.devkitpro.resolve()
@@ -92,6 +97,9 @@ def main():
     fiber = ROOT / "port/switch/runtime/fiber.cpp"
     if args.runtime and args.match in str(fiber):
         selected.append(("switch_runtime", fiber, {"directory": str(ROOT)}, [str(compiler), "-I" + str(ROOT / "tools/kazarov/include")]))
+    common_crash = ROOT / "port/src/crash/crash_common.cpp"
+    if args.services and args.match in str(common_crash) and not any(item[1] == common_crash for item in selected):
+        selected.append(("ct_port", common_crash, {"directory": str(ROOT)}, [str(compiler), "-I" + str(ROOT / "port/src")]))
     if not selected:
         parser.error("No matching PC game/host sources found in the compile database")
     version = subprocess.check_output([str(compiler), "--version"], text=True).splitlines()[0]
@@ -99,16 +107,24 @@ def main():
               "-mtp=soft", "-D__SWITCH__", "-D__NINTENDO_SWITCH__", "-DNDEBUG",
               "-fsigned-char", "-ffp-contract=off", "-fno-strict-aliasing", "-fwrapv", "-fmax-errors=3", "-w",
               "-I" + str(sdk / "libnx/include"), "-I" + str(sdk / "portlibs/switch/include")]
+    if args.objects:
+        common += ["-fPIE", "-ffunction-sections", "-fdata-sections", "-funwind-tables"]
     if args.runtime:
         common += ["-I" + str(ROOT / "port/switch")]
 
     def check(item):
         family, source, entry, arguments = item
         original = source
+        if args.linkage and source.parent == args.pc_build.resolve() / "ps2_src":
+            source = prepare_source(source, output / "generated/game")
         if args.runtime and source == ROOT / "tools/kazarov/src/cpp/platform/memory.cpp":
             source = ROOT / "port/switch/runtime/memory.cpp"
         elif args.runtime and source == ROOT / "tools/kazarov/src/cpp/sce/eekernel_threads.cpp":
             source = scheduler
+        if args.services:
+            crash_adapters = {"crash.cpp": "crash.cpp", "crash_report.cpp": "report.cpp", "crash_symbols.cpp": "symbols.cpp"}
+            if source.parent == ROOT / "port/src/crash" and source.name in crash_adapters:
+                source = ROOT / "port/switch/crash" / crash_adapters[source.name]
         relative = source.relative_to(ROOT).as_posix()
         name = hashlib.sha256(relative.encode()).hexdigest()[:12] + "-" + source.stem + ".log"
         command = common + preprocessor_options(arguments) + [str(source)]
@@ -134,6 +150,8 @@ def main():
                 print(f"  {len(results)}/{len(selected)} checked; {sum(r['exit_code'] == 0 for r in results)} passed", flush=True)
     report = dict(compiler=version, pc_database=str(database), syntax_only=not args.objects,
                   runtime_adapters=args.runtime,
+                  linkage_adapter=args.linkage,
+                  controlled_crash_adapter=args.services,
                   note="PC-generated sources and header-only dependencies reused; no ARM libraries, link, NRO or hardware execution established.",
                   total=len(results), passed=sum(r["exit_code"] == 0 for r in results), results=results)
     (output / "report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")

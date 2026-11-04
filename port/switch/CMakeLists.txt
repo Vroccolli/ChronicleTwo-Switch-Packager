@@ -22,3 +22,15 @@ add_custom_target(switch_runtime_probe
         --output "${CMAKE_BINARY_DIR}/runtime-probe"
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     COMMENT "Building Switch memory and cooperative-context diagnostic")
+add_custom_target(switch_services_probe
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/switch/build_core_probe.py"
+        --services --pc-build "${CT_SWITCH_PC_BUILD}" --devkitpro "${CT_SWITCH_DEVKITPRO}"
+        --output "${CMAKE_BINARY_DIR}/services-probe"
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    COMMENT "Building controlled-crash services diagnostic")
+add_custom_target(switch_engine_link_check
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/switch/link_engine.py"
+        --pc-build "${CT_SWITCH_PC_BUILD}" --devkitpro "${CT_SWITCH_DEVKITPRO}"
+        --output "${CMAKE_BINARY_DIR}/engine-link" --jobs 4
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    COMMENT "Compiling engine ARM64 objects and reporting actual link dependencies")

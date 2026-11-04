@@ -65,8 +65,11 @@ whose 0.2.1 SD-card test now passes on hardware. The
 [runtime checkpoint](SWITCH_RUNTIME.md) implements arena memory and cooperative
 contexts, passes 28 host tests and raises the adapted audit to 390/425 units.
 The 0.3.0 runtime probe passes all eight hardware checks, with screenshot and
-saved-log verification; logging and math also pass. Crash-platform services, GCC linkage conflicts and the
-renderer/library integration remain open.
+saved-log verification; logging and math also pass. The
+[GCC/services checkpoint](SWITCH_SERVICES.md) now compiles 426/426 ARM64 units
+and supplies controlled-failure reporting. Its 0.4.1 module-base correction is
+uploaded for hardware testing. The engine link exposes library/renderer gaps
+and an assertion-symbol collision; raw CPU fault handling remains separate work.
 
 ## Diagnostic deployment preference
 

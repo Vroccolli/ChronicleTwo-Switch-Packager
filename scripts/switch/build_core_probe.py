@@ -17,7 +17,9 @@ def main():
     parser.add_argument("--output", type=Path, default=ROOT / "port/build/switch-core-probe")
     parser.add_argument("--logging", action="store_true", help="include the real logging backend and SD file checks")
     parser.add_argument("--runtime", action="store_true", help="include native arena memory and the shared cooperative scheduler")
+    parser.add_argument("--services", action="store_true", help="include controlled-crash report persistence and raw address checks")
     args = parser.parse_args()
+    args.runtime = args.runtime or args.services
     args.logging = args.logging or args.runtime
     sdk, pc, output = args.devkitpro.resolve(), args.pc_build.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -38,6 +40,8 @@ def main():
         flags.append("-DCT_SWITCH_LOG_PROBE")
     if args.runtime:
         flags += ["-DCT_SWITCH_RUNTIME_PROBE", "-I" + str(ROOT / "port/switch")]
+    if args.services:
+        flags.append("-DCT_SWITCH_SERVICES_PROBE")
     entries = json.loads((pc / "compile_commands.json").read_text())
     wanted = [pc / "ps2_src/mg_math.cpp", ROOT / "port/src/mg_math.cpp",
               ROOT / "tools/kazarov/src/cpp/sce/libvu0.cpp"]
@@ -94,16 +98,27 @@ def main():
             run([cc, *flags, "-c", source, "-o", obj])
             objects.append(obj)
             sources.append(dict(path=source.relative_to(ROOT).as_posix(), sha256=hashlib.sha256(source.read_bytes()).hexdigest()))
-    name = "chronicletwo-runtime-probe" if args.runtime else ("chronicletwo-logging-probe" if args.logging else "chronicletwo-core-probe")
+    if args.services:
+        service_sources = [ROOT / path for path in (
+            "port/switch/crash/crash.cpp", "port/switch/crash/report.cpp", "port/switch/crash/symbols.cpp",
+            "port/src/crash/crash_common.cpp", "port/src/crash/crash_context.cpp",
+            "port/switch/core_probe/services_checks.cpp", "port/switch/crash/platform.c")]
+        for index, source in enumerate(service_sources):
+            obj = output / f"services-{index}.o"
+            compiler, standard = (cc, "-std=gnu11") if source.suffix == ".c" else (cxx, "-std=gnu++26")
+            run([compiler, standard, *flags, *includes, "-c", source, "-o", obj])
+            objects.append(obj)
+            sources.append(dict(path=source.relative_to(ROOT).as_posix(), sha256=hashlib.sha256(source.read_bytes()).hexdigest()))
+    name = "chronicletwo-services-probe" if args.services else ("chronicletwo-runtime-probe" if args.runtime else ("chronicletwo-logging-probe" if args.logging else "chronicletwo-core-probe"))
     elf = output / (name + ".elf")
     nro = output / (name + ".nro")
     run([cxx, *arch, "-specs=" + str(sdk / "libnx/switch.specs"),
          "-L" + str(sdk / "libnx/lib"), "-Wl,--gc-sections", "-Wl,-Map," + str(output / "probe.map"),
          "-o", elf, output / "main.o", output / "checks.o", *objects, "-lnx", "-lm"])
     nacp = output / "probe.nacp"
-    title = "ChronicleTwo PC-to-Switch runtime probe" if args.runtime else ("ChronicleTwo PC-to-Switch logging probe" if args.logging else "ChronicleTwo PC-to-Switch core probe")
+    title = "ChronicleTwo PC-to-Switch services probe" if args.services else ("ChronicleTwo PC-to-Switch runtime probe" if args.runtime else ("ChronicleTwo PC-to-Switch logging probe" if args.logging else "ChronicleTwo PC-to-Switch core probe"))
     run([sdk / "tools/bin" / ("nacptool" + suffix), "--create", title,
-         "ChronicleTwo contributors", "0.3.0" if args.runtime else ("0.2.1" if args.logging else "0.1.0"), nacp])
+         "ChronicleTwo contributors", "0.4.1" if args.services else ("0.3.0" if args.runtime else ("0.2.1" if args.logging else "0.1.0")), nacp])
     run([sdk / "tools/bin" / ("elf2nro" + suffix), elf, nro,
          "--icon=" + str(sdk / "libnx/default_icon.jpg"), "--nacp=" + str(nacp)])
     nm = sdk / "devkitA64/bin" / ("aarch64-none-elf-nm" + suffix)
@@ -115,6 +130,8 @@ def main():
     if args.runtime:
         required += ["ctSwitchRuntimeChecks", "ctFiberSwap", "ctFiberAbiCheck", "ArenaMemoryMap(",
                      "WaitSema", "svcSetMemoryPermission", "svcQueryMemory"]
+    if args.services:
+        required += ["ctSwitchServicesChecks", "crash_detail::WriteBundle(", "ctCrashFrames", "CrashReportAndExit("]
     for symbol in required:
         if symbol not in symbols:
             raise RuntimeError("Required linked symbol missing: " + symbol)
@@ -125,6 +142,7 @@ def main():
                     nro_sha256=hashlib.sha256(nro.read_bytes()).hexdigest(),
                     hardware_tested=False, full_engine=False, logging_backend="synchronous" if args.logging else None,
                     cooperative_runtime=args.runtime,
+                    controlled_crash_services=args.services,
                     required_symbols=required)
     (output / "build.json").write_text(json.dumps(manifest, indent=2))
     print(f"Built {nro} ({nro.stat().st_size} bytes); hardware execution not yet tested")
