@@ -63,3 +63,11 @@ The [logging checkpoint](SWITCH_LOGGING.md) removes Quill's desktop dependency
 from Switch consumers, passes 30 focused host checks and builds a logging NRO
 with a concrete SD-card test. The updated audit parses 387/424 units. Arena
 memory, cooperative contexts and crash-platform services remain to be adapted.
+
+## Diagnostic deployment preference
+
+On 2026-11-04 the user requested that newly built diagnostic fixes be sent to
+the Switch once built and checked, without waiting for another upload request.
+Use the existing FTP deployment helper, the dedicated
+`/switch/ChronicleTwo-PC-Switch` folder, and size/hash readback verification.
+Build/transfer success and hardware execution results remain separate records.

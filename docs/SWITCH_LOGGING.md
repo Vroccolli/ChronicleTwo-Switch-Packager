@@ -3,8 +3,8 @@
 The logging dependency blocker is removed. A real synchronous Switch backend
 now implements the existing logging API, and the logging diagnostic builds
 as an ARM64 NRO. Version 0.2.0 was uploaded and tested on hardware; its
-readback check failed as described below. The corrected 0.2.1 probe is prepared
-locally and still needs a hardware retest.
+readback check failed as described below. The corrected 0.2.1 probe was uploaded
+and verified by size and SHA-256, and still needs a hardware retest.
 Full game boot remains outside this checkpoint.
 
 ## First hardware result and readback correction
