@@ -41,7 +41,7 @@ output volume before publication.
 The included native engine is a **preview** with ongoing performance and
 compatibility work. Binary/build verification is distinct from hardware testing
 or campaign completion. The installation receipt records the exact version and
-hardware-test status. Initial package: engine **0.7.10**, not hardware-tested.
+hardware-test status. Current package: engine **0.7.13**, not hardware-tested.
 
 No retail ISO or completed retail game-data archive is included in this source
 repository or the packager download. The bundled gameplay seed is generated from

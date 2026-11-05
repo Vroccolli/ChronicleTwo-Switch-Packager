@@ -1,6 +1,12 @@
-# Packager v0.1.0 preview
+# Packager v0.1.1 preview
 
-First standalone Windows x64 packager, containing native Switch engine 0.7.10.
+Updated standalone Windows x64 packager, containing native Switch engine 0.7.13.
+
+Replaces the bundled 0.7.10 NRO with the complete 427-object 0.7.13 engine build.
+The ISO extractor, matching gameplay seed and controller artwork are unchanged.
+The new NRO matches its build report and the recorded Switch upload checksum.
+The earlier full-disc extraction verification remains applicable to the unchanged
+extractor and seed; gameplay execution of 0.7.13 is not established by these checks.
 
 - Select a supported PAL ISO and an output directory through the GUI.
 - No Python, development tools, network or PC game installation needed.
