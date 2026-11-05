@@ -110,3 +110,23 @@ TEST(PresentTiming, CanonicalCapSharesInterpolatedDeadlineAndSkipsStallDebt) {
     EXPECT_FALSE(pacer.Ready(now, 30));
     EXPECT_EQ(pacer.Next(now, now + 1s, 30).action, Action::Wait);
 }
+
+TEST(PresentTiming, ThirtyFpsReusesCanonicalAcrossOneAndTwoFieldCameraTransitions) {
+    for (int fields : {2, 1, 2, 1, 2}) {
+        EXPECT_FALSE(PresentNeedsIntermediateFrames(30, 60, fields));
+        EXPECT_FALSE(PresentNeedsIntermediateFrames(24, 60, fields));
+    }
+    // A 20 Hz game image stream still needs intermediate images for 30 FPS.
+    EXPECT_TRUE(PresentNeedsIntermediateFrames(30, 60, 3));
+    EXPECT_TRUE(PresentNeedsIntermediateFrames(60, 60, 2));
+    EXPECT_FALSE(PresentNeedsIntermediateFrames(60, 60, 1));
+}
+
+TEST(PresentTiming, UnlimitedAndUnknownImageCadenceRetainIntermediateFrames) {
+    EXPECT_TRUE(PresentNeedsIntermediateFrames(0, 60, 2));
+    EXPECT_TRUE(PresentNeedsIntermediateFrames(30, 0, 2));
+    EXPECT_TRUE(PresentNeedsIntermediateFrames(30, 60, 0));
+    EXPECT_TRUE(PresentNeedsIntermediateFrames(30, 60, -1));
+    EXPECT_TRUE(PresentNeedsIntermediateFrames(INFINITY, 60, 2));
+    EXPECT_TRUE(PresentNeedsIntermediateFrames(30, INFINITY, 2));
+}

@@ -60,6 +60,16 @@ private:
     Clock::time_point last_start_;
 };
 
+// A capped display at or below the game's native image rate can show the
+// completed canonical image. Only a faster display needs another scene pass.
+inline bool PresentNeedsIntermediateFrames(double max_fps, double field_rate, int frame_fields) {
+    if (!std::isfinite(max_fps) || max_fps <= 0.0 ||
+        !std::isfinite(field_rate) || field_rate <= 0.0 || frame_fields <= 0) {
+        return true;
+    }
+    return max_fps > field_rate / frame_fields;
+}
+
 inline float PresentFrameAlpha(double elapsed_fields, double fractional_field, int frame_fields) {
     const double alpha = frame_fields > 0 ? (elapsed_fields + fractional_field) / frame_fields
                                           : fractional_field;

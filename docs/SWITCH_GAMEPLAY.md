@@ -156,3 +156,42 @@ fix for the camera-fade slowdown.
 The 39,884,997-byte NRO was uploaded alone and verified by full remote SHA-256
 readback and size. SHA-256: `30570901b8f546f5fb9ea1ce2dc4ac77997922b8f1ce34ab99b5ea217c90f2e9`.
 Receipt: `port/build/switch/game/app-upload-verification-0.7.6.json`.
+
+## Preview 0.7.7: reuse native-rate images
+
+The requested 0.7.6 hardware log pull is retained under
+`port/build/switch/hardware-pulls/transition-0.7.6-20261105T111947Z`.
+It confirms repeated slow and recovered intervals. In one sustained slow
+five-second interval there were 27 completed end-frame calls, 25 display
+renders averaging 186,417 us, and 26 queue-present calls averaging 171,982 us.
+Canonical submission averaged 3,889 us, fence waits 33 us, acquisition 244 us,
+CPU interpolation 2,417 us, and mesh matching 921 us. Another slow interval
+had queue-present average 204,267 us. The previously suspected CPU mesh
+matching cost therefore does not explain the roughly 200 ms frame time.
+These CPU-side call timings locate the wait in presentation; they do not
+separate GPU execution from the driver's presentation synchronization.
+
+The large stalls correlate with the extra scene-render/display path. Intervals
+dominated by presenting the already completed canonical image instead show
+roughly 24–29 FPS and queue-present means around 20–24 ms. This motivates
+avoiding an unnecessary second scene pass at the user's 30 FPS target rather
+than changing the matcher based on the earlier hypothesis.
+
+On Switch's synchronous path, 0.7.7 uses the completed canonical image whenever
+the requested display cap is at or below the game's native image rate
+(`field_rate / frame_fields`) and no mouse display update is needed. Thus
+the common one/two-field camera transitions at 60 Hz and a 30 FPS cap avoid
+an extra scene render. Higher display rates, an uncapped display, unknown
+cadence, slower native image streams, and mouse display updates retain the
+existing intermediate-frame path. The PC behavior is unchanged. This does
+not claim to repair NVK presentation synchronization or establish hardware
+performance before a repeat of the failing transition.
+
+All ten presentation timing tests pass, including one/two-field transition
+eligibility and the slower-image-stream fallback. PC game/test targets build,
+the changed source compiles with the actual optimized ARM64 command, and all
+427 engine objects link. Existing frame diagnostics remain enabled for the
+hardware comparison.
+The 39,884,997-byte NRO was uploaded alone and verified by size and complete
+remote SHA-256 readback: `1e0f5f5aa61d224042406ae612f73a7af5992e7e721ef023317e53c680e21297`.
+Receipt: `port/build/switch/game/app-upload-verification-0.7.7.json`.

@@ -269,7 +269,14 @@ bool BetweenTicks(double fraction, Clock::time_point next_tick) {
 
     PollFpsToggle();
 
-    if (!settings.interpolation && !PresentMouseActive()) {
+    bool intermediate_frames = settings.interpolation;
+#ifdef __SWITCH__
+    // NVK's extra scene pass can make queue presentation stall for ~180 ms.
+    // At the native image rate, reuse the image already rendered this tick.
+    intermediate_frames = intermediate_frames &&
+        PresentNeedsIntermediateFrames(settings.max_fps, ClockTickRate(), wait_frames);
+#endif
+    if (!intermediate_frames && !PresentMouseActive()) {
         if (!tick_shown) {
             PresentCanonicalFrame();
             tick_shown = true;
