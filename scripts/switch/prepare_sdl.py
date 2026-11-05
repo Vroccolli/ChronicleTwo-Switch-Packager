@@ -43,6 +43,18 @@ def main():
     # devoptab flush path rather than supplying a success-returning shim.
     replace(SOURCE / "src/io/SDL_iostream.c", '#elif defined(SDL_PLATFORM_HAIKU)',
         '#elif defined(SDL_PLATFORM_HAIKU) || defined(SDL_PLATFORM_SWITCH)')
+    # SDL's a/b/x/y mapping slots mean south/east/west/north. The backend
+    # uses Nintendo's letter order (A, B, X, Y), so preserve PS2 positions:
+    # B -> Cross, A -> Circle, Y -> Square, X -> Triangle.
+    replace(SOURCE / "src/joystick/switch/SDL_sysjoystick.c",
+        '    out->a = (SDL_InputMapping){ EMappingKind_Button, 0 };\n'
+        '    out->b = (SDL_InputMapping){ EMappingKind_Button, 1 };\n'
+        '    out->x = (SDL_InputMapping){ EMappingKind_Button, 2 };\n'
+        '    out->y = (SDL_InputMapping){ EMappingKind_Button, 3 };',
+        '    out->a = (SDL_InputMapping){ EMappingKind_Button, 1 };\n'
+        '    out->b = (SDL_InputMapping){ EMappingKind_Button, 0 };\n'
+        '    out->x = (SDL_InputMapping){ EMappingKind_Button, 3 };\n'
+        '    out->y = (SDL_InputMapping){ EMappingKind_Button, 2 };')
     print(SOURCE)
 
 

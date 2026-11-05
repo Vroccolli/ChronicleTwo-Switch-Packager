@@ -462,3 +462,30 @@ before claiming the lingering glass/cloud is fixed.
 The 0.7.12 NRO is uploaded and verified by remote size and full SHA-256 readback
 (`app-upload-verification-0.7.12.json`): 39,889,093 bytes,
 `a1dd915b0e2c20ad97ab290402fb8c68aae34ad12d3e4e9e4b3002049167c300`.
+
+
+## Preview 0.7.13: physical face-button positions
+
+The controls change prepared in the other chat was present in
+`scripts/switch/prepare_sdl.py`, but preview 0.7.12 still linked the SDL archive
+built earlier for 0.7.4. Its unchanged library hash confirms that the mapping
+change was not part of that NRO.
+
+Preview 0.7.13 rebuilds SDL's actual Switch joystick backend and relinks the
+engine against that new archive. The backend reports raw buttons in Nintendo
+A/B/X/Y order, while SDL's mapping slots mean south/east/west/north. The adapter
+now maps those slots to raw buttons 1/0/3/2, yielding B=Cross, A=Circle,
+Y=Square, X=Triangle through the engine's existing positional gamepad mapping.
+Other controls retain the backend's existing assignments.
+
+The SDK rebuild compiled `SDL_sysjoystick.c` and produced SDL SHA-256
+`088e3d086597ad267a1fe21a0e311f1fa06102d8c50a0a096b76c1f60e25e92d`.
+The full 427-object engine links with zero unresolved or duplicate symbols,
+and the package's link-input record contains this new SDL hash. This update
+retains the material-fade fix from 0.7.12. Physical controls and the window-break
+fade still need the user's console retest.
+
+The user supplied `https://github.com/Vroccolli/ChronicleTwo-Switch-Packager`
+as the publishing repository. Its `main` holds a standalone packager with an
+unrelated Git history, so engine work is published separately as `switch-engine`;
+no force push or replacement of the packager main branch is intended.
