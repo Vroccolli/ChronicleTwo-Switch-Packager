@@ -195,3 +195,18 @@ hardware comparison.
 The 39,884,997-byte NRO was uploaded alone and verified by size and complete
 remote SHA-256 readback: `1e0f5f5aa61d224042406ae612f73a7af5992e7e721ef023317e53c680e21297`.
 Receipt: `port/build/switch/game/app-upload-verification-0.7.7.json`.
+
+### NVK presentation timing scope
+
+The matching public nxvk branch's
+[`wsi_switch.c`](https://github.com/PalindromicBreadLoaf/nxvk/blob/96e6e7bb05bdd9ca2fb6055b730e7ce36ed3e03d/src/vulkan/wsi/wsi_switch.c#L431)
+shows that Switch presentation waits for an internal WSI fence before queuing
+the scanout buffer. That internal function-pointer call bypasses the game's
+static Vulkan wrappers, so it contributes to `queue-present` time but not the
+reported `fence` phase. Short engine fence calls therefore do not establish
+that GPU execution is cheap. The long presentation call can include GPU
+completion as well as window queuing; the current diagnostics do not split
+those two internal stages. With zero-copy enabled, this path also skips the
+CPU swizzle fallback. No driver synchronization was removed: image readiness
+is required for correct presentation. Source/provenance is saved under
+`.kazarov/switch/nvk-memory-source/wsi-switch-source.json`.
