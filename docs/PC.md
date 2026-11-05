@@ -1483,6 +1483,7 @@ These differ from retail:
 
 - A blend between actions of different motion sets starts from the action last posed. Retail samples the new motion set at the previous action's frame number, which belongs to another motion.
 - During a blend between two different actions, auxiliary material, visibility, camera and vertex keys of the new action apply unblended. Retail blends a key list with itself.
+- Native auxiliary material-transparency curves hold their authored first and last values outside the key interval, including one-key curves. The recovered evaluator divides by zero at a held final key; using that path produced nonfinite opacity instead of completing a fade.
 - Frame arithmetic runs on the actions' own intervals rather than on the retail motion frames, so float rounding of the frame step can differ in the last bit; with intervals of a few hundred frames it is no coarser than retail's.
 - The retail `KEY` `横飛びL` in `event/e00/e50/e50_monica.chr` ends before it starts; it plays as a still pose at its start, as retail does unless the motion is held.
 

@@ -396,9 +396,9 @@ particle cleanup fix is claimed yet.
 ## Archived-build comparison
 
 The user recalls this same window-break effect clearing in the 0.7.1–0.7.3
-period and reports it present by 0.7.8. Treat this as a reported regression
-window, pending a same-scene comparison. This takes priority over assuming an
-inherited particle-lifetime bug. Material changes in this interval include
+period and initially reported it present by 0.7.8. The user subsequently
+retested the archived builds and confirmed it happens in all of them, retracting
+the regression window. Investigate the shared animation/effect path. Material changes in this interval include
 release optimization (0.7.3), audio/loading integration (0.7.4), canonical
 presentation capping (0.7.5) and reuse instead of an extra display pass (0.7.7).
 The 0.7.8 source fix concerns item-icon sparkle bounds, not this window effect.
@@ -418,3 +418,47 @@ Compare the same window sequence, closing completely between versions, and
 record the last version that clears and the first that freezes. Normal logs
 are shared and overwritten by the next launch, so retrieve any needed run's
 logs before starting the following version.
+
+
+## Preview 0.7.12: held material fades
+
+The user's archived-build comparison confirms the lingering effect occurs in
+all tested versions (0.7.1–0.7.8). The 0.7.11 history contains 60 snapshots
+but no ordinary manager calls or live scripted effects in the captured run;
+it does not establish cleanup of the visible window effect.
+
+The prepared `event/e00/e50/e50_glassware.gltf` bundle and its sidecar identify
+a named `shatter` model animation with duration 58 frames. Its 144 auxiliary
+material-transparency channels include 140 ending at transparency 1 (opacity
+0); four retain their authored nonzero opacity. This is animated geometry,
+not an ordinary particle pool. Extracted local inspection artifacts are under
+`port/build/switch-particle-audit`; no game assets are committed or modified.
+
+Native character actions previously sent these auxiliary channels through the
+recovered `MotionProc`. At/after its last key, that evaluator chooses the same
+key for both endpoints but divides by their zero frame distance. Material-alpha
+interpolation then writes NaN instead of the final opacity. A single-key curve
+also divides by zero; sampling before a delayed first key can use index -1.
+The new regression tests reproduce NaN opacity before the fix (and the legacy
+same-action blend test faults), as retained in `.kazarov/switch-fade-before-tests.log`.
+This proves a boundary bug, not yet that it explains every visible particle.
+
+`character_motion.cpp` now samples auxiliary material transparency with bounded
+endpoints in ordinary poses, same-action blends, and target auxiliary channels
+of cross-action blends. It holds the exact first/last value and handles one-key
+curves without division. Intermediate values retain linear interpolation and
+transparency-to-opacity conversion. Other channel types retain their existing
+paths; the recovered source and game data are unchanged. This fixes a shared
+native runtime bug, so PC and Switch use the correction.
+
+All 45 focused fade/native-model tests pass after the fix, including ordinary
+poses, held/single keys, same-action blends and cross-action target fades. The PC game and test
+targets rebuild successfully, the real ARM64 motion object compiles, and all
+427 release objects link with zero unresolved or duplicate symbols. Preview
+0.7.12 packages the change with the existing pacing, audio, save, loading and
+history support. Hardware replay of the window-break sequence remains required
+before claiming the lingering glass/cloud is fixed.
+
+The 0.7.12 NRO is uploaded and verified by remote size and full SHA-256 readback
+(`app-upload-verification-0.7.12.json`): 39,889,093 bytes,
+`a1dd915b0e2c20ad97ab290402fb8c68aae34ad12d3e4e9e4b3002049167c300`.

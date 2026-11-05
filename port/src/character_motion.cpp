@@ -77,6 +77,33 @@ float Local(const Action &action, float frame) {
 }
 
 /**
+ * Samples exported material transparency without the retail evaluator's zero
+ * denominator at a held last key (or its index -1 before the first key).
+ */
+float Transparency(const Mot_List &channel, float time) {
+    if (channel.key_count == 1 || time <= channel.key_frames[0]) return channel.values[0][0];
+    auto *end = channel.key_frames + channel.key_count;
+    const auto *upper = std::upper_bound(channel.key_frames, end, time);
+    const auto first = static_cast<std::size_t>(upper - channel.key_frames - 1);
+    if (upper == end) return channel.values[first][0];
+    const float span = static_cast<float>(*upper - channel.key_frames[first]);
+    const float t = (time - static_cast<float>(channel.key_frames[first])) / span;
+    return (1 - t) * channel.values[first][0] + t * channel.values[first + 1][0];
+}
+
+bool ApplyMaterialAlpha(mgCFrame &root, const Mot_List &channel, float from, float to, float blend) {
+    if (channel.type != MOTION_KEY_MATERIAL_ALPHA) return false;
+    auto *frame = root.GetFrame(channel.frame);
+    if (!frame || !frame->visual || channel.target < 0 || channel.target >= frame->visual->GetMaterialNum()) return true;
+    auto *materials = frame->visual->GetpMaterial();
+    if (!materials) return true;
+    const float first = Transparency(channel, from);
+    const float value = blend == 0 ? first : (1 - blend) * first + blend * Transparency(channel, to);
+    materials[channel.target].diffuse[3] = 1 - value;
+    return true;
+}
+
+/**
  * Applies one action's channels at a local game frame.
  */
 void Apply(mgCFrame &root, const Action &action, float local, mgCCamera *camera) {
@@ -85,7 +112,8 @@ void Apply(mgCFrame &root, const Action &action, float local, mgCCamera *camera)
             channel = channel->next;
             continue;
         }
-        if (model_assets::ApplyChannel(root, local, local, 0, *channel)) {
+        if (model_assets::ApplyChannel(root, local, local, 0, *channel) ||
+            ApplyMaterialAlpha(root, *channel, local, local, 0)) {
             channel = channel->next;
         } else {
             channel = MotionProc(&root, local, channel, camera);
@@ -173,7 +201,8 @@ void Blend(mgCFrame &root, tagMOTION_TYPE &motion, float from, float to, float b
                 channel = channel->next;
                 continue;
             }
-            if (model_assets::ApplyChannel(root, source_local, target_local, blend, *channel)) {
+            if (model_assets::ApplyChannel(root, source_local, target_local, blend, *channel) ||
+                ApplyMaterialAlpha(root, *channel, source_local, target_local, blend)) {
                 channel = channel->next;
             } else {
                 channel = MotionProc(&root, static_cast<unsigned int>(source_local), static_cast<unsigned int>(target_local), blend, channel, camera);
@@ -184,7 +213,8 @@ void Blend(mgCFrame &root, tagMOTION_TYPE &motion, float from, float to, float b
     model_assets::BlendActions(root, source->head, source_local, target.head, target_local, blend);
     // Auxiliary channels of the two actions differ, so the target's apply unblended.
     for (auto *channel = target.head; channel;) {
-        if (!channel->key_count || model_assets::IsNativeChannel(*channel)) {
+        if (!channel->key_count || model_assets::IsNativeChannel(*channel) ||
+            ApplyMaterialAlpha(root, *channel, target_local, target_local, 0)) {
             channel = channel->next;
         } else {
             channel = MotionProc(&root, target_local, channel, camera);
