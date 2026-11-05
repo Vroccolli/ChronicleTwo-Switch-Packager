@@ -37,6 +37,9 @@
 #include "profile.hpp"
 #include "scenesnd.hpp"
 #include "stubs/mglib.hpp"
+#ifdef __SWITCH__
+#include "gfx/frame_timing.hpp"
+#endif
 
 namespace {
 
@@ -1449,6 +1452,9 @@ PORT_OVERRIDE void mgBeginPacket(mgCDrawManager *manager) {
 }
 
 PORT_OVERRIDE void mgEndFrame(mgCDrawManager *manager) {
+#ifdef __SWITCH__
+    ct::frame_timing::Scope timing(ct::frame_timing::Phase::EndFrame);
+#endif
     bool queued[4] = {};
 
     {
@@ -1486,6 +1492,9 @@ PORT_OVERRIDE void mgEndFrame(mgCDrawManager *manager) {
 
             if (list) {
                 CT_PROFILE_ZONE("Canonical scene render");
+#ifdef __SWITCH__
+                ct::frame_timing::Scope canonical_timing(ct::frame_timing::Phase::Canonical);
+#endif
                 if (!menuworld::RenderPauseFrame(*list)) {
                     gfx::RenderList(*list, 1.0f, gfx::RenderOptions{.canonical = true});
                 }
@@ -1503,6 +1512,9 @@ PORT_OVERRIDE void mgEndFrame(mgCDrawManager *manager) {
 
             {
                 CT_PROFILE_ZONE("Canonical readbacks");
+#ifdef __SWITCH__
+                ct::frame_timing::Scope readback_timing(ct::frame_timing::Phase::Readback);
+#endif
                 CacheMarkedColors();
                 AnswerDepthQueries();
             }
@@ -1562,6 +1574,9 @@ PORT_OVERRIDE void mgEndFrame(mgCDrawManager *manager) {
     PresentWaitFrame(old_vcount, mgFrameRate);
     old_vcount = mgGetVSyncCount();
     PresentTickEnd();
+#ifdef __SWITCH__
+    ct::frame_timing::Report(mgFrameRate, PresentGetSettings().interpolation, PresentGetSettings().max_fps);
+#endif
     mgNowFrameRate = mgTimeFrameFields();
 
     if (!(mgNowFrameRate - static_cast<float>(mgFrameRate) <= 1.0f)) {

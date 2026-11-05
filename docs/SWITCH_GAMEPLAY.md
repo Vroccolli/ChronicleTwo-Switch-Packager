@@ -123,3 +123,36 @@ improvement remain unverified until the user runs the updated game.
 The 39,880,901-byte NRO was deployed alone and fully size/SHA-256 readback
 verified. SHA-256: `fa50fc42d21711931d485bef8aee2f93f3714672e29d25a3a5bef7d9e4d5f545`.
 Receipt: `port/build/switch/game/app-upload-verification-0.7.5.json`.
+
+### Camera-fade hardware regression
+
+The user confirms the 0.7.5 loading screen appears and audio sounds better.
+After a camera fade in the same room where saving had worked, performance
+dropped persistently to about 5 FPS. Captured logs under
+`port/build/switch/hardware-pulls/transition-0.7.5-20261105T110210Z` confirm the
+0.7.5 build and startup completion after 84,594 ms. Before the drop, many
+samples were 25–30 FPS; afterward they remained about 4.5–5.1 FPS for more
+than 40 samples. Audio delivered 234–243 mixer callbacks per five-second
+interval, with means around 1.2 ms and no callback-budget misses. This is
+consistent with fixing the earlier audio queue gaps, but does not measure
+AUDOUT underruns directly. The displayed tick rate counts wall-clock fields
+and does not establish that logic frames continue at 60 Hz.
+
+The cause of the sustained graphics slowdown is unproven. One candidate is
+the display-list matcher's persistent `g_instanced_keys`: a transition may
+route later keys through nested geometry comparisons until a full interpolation
+cut. No matching behavior has been changed based on this hypothesis.
+
+Preview 0.7.6 adds five-second timing summaries for completed end-frame calls,
+canonical rendering, readback, display rendering, canonical presentation,
+interpolation and mesh matching. Static Vulkan wrappers also time image
+acquisition, fence waits, queue submission and queue presentation. These are
+nested wall-clock intervals, not additive exclusive CPU/GPU timings. Per-phase
+measurement only accumulates atomic counters; the game thread emits logs.
+Pinned Kazarov sources remain unchanged: matching instrumentation uses a
+generated Switch-only source copy. The PC targets rebuild successfully and
+all 427 ARM64 engine objects link. This is a diagnostic build, not a claimed
+fix for the camera-fade slowdown.
+The 39,884,997-byte NRO was uploaded alone and verified by full remote SHA-256
+readback and size. SHA-256: `30570901b8f546f5fb9ea1ce2dc4ac77997922b8f1ce34ab99b5ea217c90f2e9`.
+Receipt: `port/build/switch/game/app-upload-verification-0.7.6.json`.

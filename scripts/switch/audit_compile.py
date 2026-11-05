@@ -14,7 +14,7 @@ import shlex
 import subprocess
 from prepare_runtime import prepare_scheduler
 from prepare_sources import prepare_source
-from prepare_gfx import prepare_memory
+from prepare_gfx import prepare_memory, prepare_displaylist
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -131,6 +131,8 @@ def main():
                 source = ROOT / "port/switch/data/files.cpp"
             if source == ROOT / "tools/kazarov/src/cpp/gfx/memory.cpp":
                 source = prepare_memory(output / "generated/gfx")
+            elif source == ROOT / "tools/kazarov/src/cpp/gfx/displaylist.cpp":
+                source = prepare_displaylist(output / "generated/gfx")
             crash_adapters = {"crash.cpp": "crash.cpp", "crash_report.cpp": "report.cpp", "crash_symbols.cpp": "symbols.cpp"}
             if source.parent == ROOT / "port/src/crash" and source.name in crash_adapters:
                 source = ROOT / "port/switch/crash" / crash_adapters[source.name]
@@ -162,6 +164,14 @@ def main():
             code, diagnostic = 124, "compiler timeout after 90 seconds"
         (output / name).write_text(diagnostic, encoding="utf-8")
         dependencies=[]
+        if args.services and original in (ROOT / "port/src/present.cpp", ROOT / "port/src/mglib.cpp",
+                ROOT / "tools/kazarov/src/cpp/gfx/displaylist.cpp"):
+            dependency=ROOT / "port/switch/gfx/frame_timing.hpp"
+            dependencies.append(dict(path=dependency.relative_to(ROOT).as_posix(),
+                sha256=hashlib.sha256(dependency.read_bytes()).hexdigest()))
+            if original == ROOT / "tools/kazarov/src/cpp/gfx/displaylist.cpp":
+                dependencies.append(dict(path=original.relative_to(ROOT).as_posix(),
+                    sha256=hashlib.sha256(original.read_bytes()).hexdigest()))
         if original == ROOT / "port/src/present.cpp":
             dependency = ROOT / "port/src/present_timing.hpp"
             dependencies.append(dict(path=dependency.relative_to(ROOT).as_posix(),

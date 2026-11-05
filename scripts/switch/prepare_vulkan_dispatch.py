@@ -16,6 +16,7 @@ def prepare_dispatch(output):
     code = '''// Generated from the pinned Khronos prototypes. Do not edit.
 #include "gfx/requirements.hpp"
 #include "kazarov/log.hpp"
+#include "gfx/frame_timing.hpp"
 #include <atomic>
 extern "C" PFN_vkVoidFunction vk_common_GetDeviceProcAddr(VkDevice, const char *);
 namespace {
@@ -41,6 +42,9 @@ template<class T> T Resolve(const char *name) {
                 if not match: raise ValueError(f"Cannot read {name}: {parameter}")
                 arguments.append(match[1])
         code += f'extern "C" VKAPI_ATTR {result} VKAPI_CALL {name}({params}) {{\n'
+        phase={"vkAcquireNextImageKHR":"Acquire", "vkWaitForFences":"Fence",
+               "vkQueuePresentKHR":"QueuePresent", "vkQueueSubmit2":"Submit"}.get(name)
+        if phase:code+=f'    ct::frame_timing::Scope timing(ct::frame_timing::Phase::{phase});\n'
         call = f'Resolve<PFN_{name}>("{name}")({", ".join(arguments)})'
         if name == "vkGetDeviceProcAddr":
             code += '    return vk_common_GetDeviceProcAddr(device,pName);\n'

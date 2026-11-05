@@ -21,7 +21,7 @@ static void LoadingText(int row,const char *text,u16 color) {
 void ctSwitchLoadingStage(const char *stage) {
     FILE *status=fopen("sdmc:/switch/ChronicleTwo-PC-Switch/game/startup-stage.txt","wb");
     if(status) {
-        fprintf(status,"ChronicleTwo 0.7.5\n%s\nElapsed: %llu ms\n",stage,
+        fprintf(status,"ChronicleTwo 0.7.6\n%s\nElapsed: %llu ms\n",stage,
             (unsigned long long)(armTicksToNs(armGetSystemTick()-loading_started)/1000000));
         fclose(status);
     }
@@ -37,14 +37,14 @@ void ctSwitchLoadingStage(const char *stage) {
     LoadingText(21,"Loading...",RGB565_FROM_RGB8(240,244,252));
     LoadingText(25,stage,RGB565_FROM_RGB8(184,200,220));
     LoadingText(33,"Please wait",RGB565_FROM_RGB8(128,148,176));
-    LoadingText(41,"Switch preview 0.7.5",RGB565_FROM_RGB8(100,120,148));
+    LoadingText(41,"Switch preview 0.7.6",RGB565_FROM_RGB8(100,120,148));
     consoleUpdate(loading_console);
 }
 void ctSwitchLoadingFinished(void) {
     if(loading_console)consoleExit(loading_console);
     loading_console=NULL;
 }
-const char *ctSwitchGameBuildId(void) { return "switch-engine-0.7.5"; }
+const char *ctSwitchGameBuildId(void) { return "switch-engine-0.7.6"; }
 void ctSwitchBootstrap(void) {
     const char *root="sdmc:/switch/ChronicleTwo-PC-Switch/game";
     mkdir(root,0777);
@@ -59,7 +59,7 @@ void ctSwitchBootstrap(void) {
     // First boot uses the already tested single graphics-thread path.
     // An explicitly supplied setting still takes precedence.
     setenv("DC2_RENDER_THREAD","off",0);
-    printf("ChronicleTwo native Switch preview 0.7.5\nApplet type: %u\nRun root: %s\n",
+    printf("ChronicleTwo native Switch preview 0.7.6\nApplet type: %u\nRun root: %s\n",
         (unsigned)appletGetAppletType(),root);
     // Select SD for POSIX-rooted engine paths. std::filesystem treats sdmc:/
     // as relative and would otherwise prepend the launch working directory.

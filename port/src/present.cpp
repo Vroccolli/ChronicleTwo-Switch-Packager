@@ -25,6 +25,9 @@
 #include "present_timing.hpp"
 #include "profile.hpp"
 #include "stubs/mglib.hpp"
+#ifdef __SWITCH__
+#include "gfx/frame_timing.hpp"
+#endif
 
 namespace {
 
@@ -145,6 +148,9 @@ double DisplaySeconds(bool intermediate = false) {
 
 bool DisplayFrame(float alpha, bool present) {
     CT_PROFILE_ZONE("Display frame render");
+#ifdef __SWITCH__
+    ct::frame_timing::Scope timing(ct::frame_timing::Phase::Display);
+#endif
     const gfx::DisplayList *list = mgPortLastList();
 
     if (list == nullptr) {
@@ -178,6 +184,7 @@ bool PresentCanonicalFrame() {
     if (!ClockUnbounded() && !pacer.Ready(Clock::now(), settings.max_fps)) {
         return false;
     }
+    ct::frame_timing::Scope timing(ct::frame_timing::Phase::CanonicalPresent);
 #endif
     const gfx::DisplayList *overlay_list = DisplayOverlayList();
     const double            seconds = ClockUnbounded() && settings.display_per_tick > 0 ? 0 : DisplaySeconds();

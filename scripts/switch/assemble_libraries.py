@@ -18,6 +18,7 @@ def main():
     command=[str(sdk/"devkitA64/bin/aarch64-none-elf-g++.exe"),"-std=gnu++26","-O2",
         "-march=armv8-a+crc+crypto","-mtp=soft","-fPIE","-ffunction-sections","-fdata-sections",
         "-D__SWITCH__","-DNDEBUG","-I"+str(headers),"-I"+str(ROOT/"tools/kazarov/include"),
+        "-I"+str(ROOT/"port/switch"),
         "-I"+str(sdk/"libnx/include"),"-c",str(source),"-o",str(obj)]
     subprocess.run(command,check=True)
     subprocess.run([str(sdk/"devkitA64/bin/aarch64-none-elf-gcc-ar.exe"),"rcs",str(library),str(obj)],check=True)

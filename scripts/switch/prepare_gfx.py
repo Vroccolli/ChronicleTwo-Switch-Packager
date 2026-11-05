@@ -1,4 +1,4 @@
-"""Adapt only Switch GPU memory selection in a generated Kazarov source copy."""
+"""Generate Switch GPU memory adaptation and display-list timing copies."""
 from pathlib import Path
 import hashlib
 import json
@@ -35,4 +35,17 @@ def prepare_memory(output):
         original_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
         generated_sha256=hashlib.sha256(generated.read_bytes()).hexdigest(),
         policy_sha256=hashlib.sha256((ROOT/'port/switch/gfx/memory_policy.hpp').read_bytes()).hexdigest()),indent=2))
+    return generated
+
+
+def prepare_displaylist(output):
+    source=ROOT/'tools/kazarov/src/cpp/gfx/displaylist.cpp'
+    text=source.read_text()
+    text='#include "gfx/frame_timing.hpp"\n'+text
+    for function, phase in [('BuildMatches','Matching'),('Interpolated','Interpolation')]:
+        seam=f'    KZ_PROFILE_ZONE("Kazarov {function}");'
+        if text.count(seam)!=1:raise RuntimeError('Display-list timing seam changed: '+function)
+        text=text.replace(seam,seam+f'\n    ct::frame_timing::Scope timing(ct::frame_timing::Phase::{phase});')
+    output=Path(output);output.mkdir(parents=True,exist_ok=True)
+    generated=output/'displaylist.cpp';generated.write_text(text)
     return generated
