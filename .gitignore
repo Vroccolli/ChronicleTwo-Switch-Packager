@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.venv/
+dist/
+build/
+payload/
+*.iso
+*.nro
+*.elf
+*.dll
+*.exe
+*.zip
+data.json
+installation.json
+packager.log
