@@ -444,10 +444,12 @@ PORT_OVERRIDE int main(int argc, const char **argv) {
     ctSwitchBootstrap();
     // Default to this port's own SD directory. Explicit launch arguments occur
     // later, so the existing option parser still honors user overrides.
+    std::string executable = argc>0 && argv[0] ? argv[0] : "chronicletwo.nro";
+    if (executable.starts_with("sdmc:/")) executable.erase(0,5);
     std::vector<const char *> args;
-    args.push_back(argc>0 && argv[0] ? argv[0] : "chronicletwo.nro");
+    args.push_back(executable.c_str());
     args.push_back("--run-dir");
-    args.push_back("sdmc:/switch/ChronicleTwo-PC-Switch/game");
+    args.push_back("/switch/ChronicleTwo-PC-Switch/game");
     for (int i=1;i<argc;++i) args.push_back(argv[i]);
     const auto count=static_cast<int>(args.size());
     args.push_back(nullptr);

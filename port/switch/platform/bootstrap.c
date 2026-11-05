@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 size_t __nx_heap_size = 0;
 void ctSwitchBootstrap(void) {
@@ -16,4 +17,10 @@ void ctSwitchBootstrap(void) {
     setenv("DC2_RENDER_THREAD","off",0);
     printf("ChronicleTwo native Switch preview 0.7.0\nApplet type: %u\nRun root: %s\n",
         (unsigned)appletGetAppletType(),root);
+    // Select SD for POSIX-rooted engine paths. std::filesystem treats sdmc:/
+    // as relative and would otherwise prepend the launch working directory.
+    if (chdir("sdmc:/") != 0) {
+        perror("Cannot select SD root");
+        exit(EXIT_FAILURE);
+    }
 }

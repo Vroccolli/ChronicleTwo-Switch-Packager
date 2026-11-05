@@ -135,9 +135,17 @@ compile/link and NRO packaging. The resulting `chronicletwo-switch.nro` is
 44,861,637 bytes. It contains the real game `MainLoop`, renderer, native
 platform adapters and data/media/script libraries. Hardware game boot is not
 yet established. The default run root is the dedicated
-`sdmc:/switch/ChronicleTwo-PC-Switch/game`; explicit launch arguments can
+`/switch/ChronicleTwo-PC-Switch/game` on the SD device; explicit launch arguments can
 override it through the existing parser. First boot uses the tested single
 graphics-thread mode and saves startup stdout/stderr there.
+
+Bootstrap selects `sdmc:/` as the current device before entering the engine.
+The default run path and executable argument use POSIX-rooted paths because
+`std::filesystem` otherwise treats `sdmc:/...` as relative and prepends the
+launch directory. The SDK's actual `chdir` implementation calls
+`setDefaultDevice` after the device change succeeds. Packaging also stages
+the original controller/keyboard glyph assets beside the NRO, matching the
+PC install and keeping the Switch button artwork available.
 
 The complete orchestration also passes with `--reuse-objects`: dependencies
 are rebuilt as needed, matching engine objects are verified, and the engine
