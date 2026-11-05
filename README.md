@@ -34,8 +34,8 @@ The user has booted and played the real game. The [gameplay checkpoint](docs/SWI
 records the release-optimized builds, working save report and 30 FPS target.
 The user confirms the startup loading screen works and audio has improved.
 Preview 0.7.7 avoids the extra scene pass associated with sustained presentation
-stalls; 0.7.9 includes a spectrumised-item icon crash fix and a pacing correction,
-both awaiting hardware retests.
+stalls. The user confirms the spectrumised-item crash fix works on 0.7.8;
+0.7.9 retains it and adds a pacing correction awaiting hardware testing.
 Heavy-scene performance and presentation pacing remain under investigation.
 
 See [the Switch work plan](docs/PC_TO_SWITCH.md) for scope and milestones.

@@ -252,6 +252,18 @@ flat table passes. The diagnostic is retained under
 The 39,884,997-byte 0.7.8 NRO was uploaded alone and verified by remote size
 and complete SHA-256 readback: `f192b062ddfa319e2af00796908b5ec82bfe5973e4c9abf8168771c633e33e9e`.
 Receipt: `port/build/switch/game/app-upload-verification-0.7.8.json`.
+The user subsequently confirms that creating a spectrumised item works on
+0.7.8. The completed run's logs are retained under
+`port/build/switch/hardware-pulls/retest-20261105T120110Z`. A listing of the
+system crash directory showed no report newer than the preserved 0.7.7 crash.
+This validates the reported spectrumise action; it is not exhaustive coverage
+of inventory actions or a proof that all crashes are resolved.
+
+The same run provides a clear light-scene pacing example: one five-second
+window completed 298 end-frame calls but presented only 100 canonical images,
+with canonical submission averaging 2,415 us and queue-present averaging
+4,872 us. Thus the roughly 20 FPS display plateau was not a 20 FPS canonical
+throughput limit in that window. This supports testing the 0.7.9 slot policy.
 
 The 0.7.7 performance run contains 635 FPS samples, 450 at or above 20 FPS and
 11 below 10 FPS, with a maximum of 28.9 FPS. None of the 131 timing windows

@@ -13,8 +13,9 @@ The user has booted through the actual game menus, intro and gameplay. Preview
 their overclock. The user confirms the later loading screen works and audio
 sounds better. The 0.7.7 hardware logs show the extra display pass and its
 sustained 170–205 ms waits are absent, with heavy scenes still below 30 FPS.
-Preview 0.7.9 includes a spectrumised-item sparkle crash fix and native-rate
-presentation pacing correction, awaiting hardware confirmation. See [the gameplay/performance checkpoint](SWITCH_GAMEPLAY.md)
+The user confirms the spectrumised-item sparkle crash is fixed on 0.7.8.
+Preview 0.7.9 retains that fix and adds a native-rate presentation pacing
+correction awaiting hardware confirmation. See [the gameplay/performance checkpoint](SWITCH_GAMEPLAY.md)
 for evidence and the remaining performance, pacing and crash retests.
 
 ## Earlier bring-up checkpoints
