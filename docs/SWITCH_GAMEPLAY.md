@@ -261,3 +261,37 @@ sustained 170–205 ms extra-pass waits are absent from this run. This supports
 the intended path change, but it is not a controlled stock-clock benchmark
 or proof of steady 30 FPS. Heavier scenes and presentation pacing still need
 optimization.
+
+## Preview 0.7.9: canonical presentation cadence
+
+The remaining 15 FPS plateaus expose a separate pacing problem. A strict
+deadline one full period after the previous actual display start can discard
+every other image from a nominally 30 Hz source with small timing variations.
+Additionally, the synchronous canonical branches marked a tick shown even
+when its presentation was skipped or failed, suppressing a later retry.
+
+On Switch's native-image/no-mouse path, canonical images now use a target-slot
+pacer. Successful presentations consume slots; skipped/failed attempts do not.
+The ordinary pacer still records every actual start, and mode transitions
+reset/check the native phase to avoid using stale deadlines. Interpolated,
+mouse-driven and unbounded paths retain the ordinary policy. Tick-shown
+success bookkeeping is corrected only for Switch. No game-clock or canonical
+rendering work is skipped.
+
+This is a nominal display-rate cap, rather than a requirement that every pair
+of actual starts be separated by at least 33.333 ms. Nearest-slot assignment
+allows bounded timing compensation, with a half-period minimum spacing.
+Missing a full slot resets phase so a long stall creates no overdue display
+debt. No arbitrary comparison epsilon is used.
+
+All 17 integrated presentation tests pass, including jittered 30/60 Hz sources,
+one/two-field cadence transitions, failures/retries, long stalls, mode handoff,
+rate changes and clock-range edges. The PC game/tests build successfully;
+the changed source compiles under the actual release ARM64 command and all
+427 engine objects link. This build also includes the spectrumised-item fix.
+Hardware pacing and spectrumise retests remain pending.
+The first upload disconnected; the same immutable staged NRO was resumed with
+the dedicated helper, then verified by exact size and complete remote SHA-256
+readback. Size: 39,884,997 bytes. SHA-256:
+`2516029c23d5fc095d89c74f64959c6986a61c86349f9578c6318e34541ee809`.
+Receipt: `port/build/switch/game/app-upload-verification-0.7.9.json`.

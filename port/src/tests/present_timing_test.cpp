@@ -130,3 +130,110 @@ TEST(PresentTiming, UnlimitedAndUnknownImageCadenceRetainIntermediateFrames) {
     EXPECT_TRUE(PresentNeedsIntermediateFrames(INFINITY, 60, 2));
     EXPECT_TRUE(PresentNeedsIntermediateFrames(30, INFINITY, 2));
 }
+
+TEST(PresentTiming, CanonicalSlotsKeepJitteredThirtyHzImagesAtThirtyHz) {
+    for (int sign : {-1, 1}) {
+        CanonicalPresentPacer pacer;
+        int displays = 0;
+        for (int image = 0; image < 600; ++image) {
+            // Alternating near-period intervals reproduced the former half-rate lock.
+            const auto now = origin + std::chrono::nanoseconds(1000000000LL * image / 30) +
+                             std::chrono::microseconds(sign * (image % 2 ? 900 : -900));
+            if (pacer.Present([] { return true; }, [&] { return now; }, 30)) ++displays;
+            EXPECT_FALSE(pacer.Present([] { return true; }, [&] { return now; }, 30));
+        }
+        EXPECT_EQ(displays, 600);
+    }
+}
+
+TEST(PresentTiming, CanonicalSlotsSelectThirtyFromJitteredSixtyHzImages) {
+    CanonicalPresentPacer pacer;
+    int displays = 0;
+    for (int image = 0; image < 1200; ++image) {
+        const auto now = origin + std::chrono::nanoseconds(1000000000LL * image / 60) +
+                         std::chrono::microseconds((image % 7 - 3) * 300);
+        if (pacer.Present([] { return true; }, [&] { return now; }, 30)) ++displays;
+    }
+    EXPECT_GE(displays, 599);
+    EXPECT_LE(displays, 601);
+}
+
+TEST(PresentTiming, CanonicalSlotsSurviveOneAndTwoFieldCameraCadences) {
+    CanonicalPresentPacer pacer;
+    int displays = 0;
+    int expected = 0;
+    int field = 0;
+    for (int fields : {2, 1, 2, 1, 2}) {
+        for (int image = 0; image < 120; ++image) {
+            const auto now = origin + std::chrono::nanoseconds(1000000000LL * field / 60) +
+                             std::chrono::microseconds((image % 5 - 2) * 250);
+            if (pacer.Present([] { return true; }, [&] { return now; }, 30)) ++displays;
+            field += fields;
+        }
+        expected += fields == 2 ? 120 : 60;
+    }
+    EXPECT_GE(displays, expected - 2);
+    EXPECT_LE(displays, expected + 2);
+}
+
+TEST(PresentTiming, CanonicalFailureDoesNotConsumeSlotAndStallHasNoDebt) {
+    CanonicalPresentPacer pacer;
+    auto now = origin;
+    EXPECT_FALSE(pacer.Present([] { return false; }, [&] { return now; }, 30));
+    EXPECT_TRUE(pacer.Present([] { return true; }, [&] { return now; }, 30));
+    EXPECT_FALSE(pacer.Present([] { return true; }, [&] { return now; }, 30));
+    now += 5s;
+    EXPECT_TRUE(pacer.Present([] { return true; }, [&] { return now; }, 30));
+    for (int ms = 0; ms < 16; ++ms) {
+        const auto retry = now + std::chrono::milliseconds(ms);
+        EXPECT_FALSE(pacer.Present([] { return true; }, [&] { return retry; }, 30));
+    }
+    now += 33ms;
+    EXPECT_TRUE(pacer.Present([] { return true; }, [&] { return now; }, 30));
+}
+
+TEST(PresentTiming, CanonicalUnlimitedAndCapChangesStartAFreshPhase) {
+    CanonicalPresentPacer pacer;
+    auto now = origin;
+    EXPECT_TRUE(pacer.Present([] { return true; }, [&] { return now; }, 30));
+    EXPECT_TRUE(pacer.Present([] { return true; }, [&] { return now; }, 0));
+    EXPECT_TRUE(pacer.Present([] { return true; }, [&] { return now; }, 0));
+    EXPECT_TRUE(pacer.Present([] { return true; }, [&] { return now; }, 30));
+    EXPECT_TRUE(pacer.Present([] { return true; }, [&] { return now; }, 60));
+    EXPECT_FALSE(pacer.Present([] { return true; }, [&] { return now; }, 60));
+}
+
+TEST(PresentTiming, CanonicalSlotsPreserveOrdinaryPacingAcrossModeTransitions) {
+    PresentPacer ordinary;
+    CanonicalPresentPacer canonical;
+    auto now = origin;
+    auto actual = [&] { return ordinary.Present([] { return true; }, [&] { return now; }); };
+    ASSERT_TRUE(canonical.Present(actual, [&] { return now; }, 30));
+    // Entering interpolation uses the actual canonical start, not an old one.
+    canonical.Reset();
+    EXPECT_FALSE(canonical.Active());
+    EXPECT_EQ(ordinary.Next(now + 1ms, now + 1s, 30).action, Action::Wait);
+    now += 34ms;
+    ASSERT_TRUE(actual());
+    // Re-entering the native policy must pass the ordinary Ready guard first.
+    EXPECT_FALSE(ordinary.Ready(now + 1ms, 30));
+    now += 34ms;
+    ASSERT_TRUE(ordinary.Ready(now, 30));
+    ASSERT_TRUE(canonical.Present(actual, [&] { return now; }, 30));
+    now += 34ms;
+    EXPECT_FALSE(canonical.Present([&] { return ordinary.Present([] { return false; }, [&] { return now; }); },
+                                  [&] { return now; }, 30));
+    EXPECT_TRUE(ordinary.Ready(now, 30));
+    EXPECT_TRUE(canonical.Present(actual, [&] { return now; }, 30));
+}
+
+TEST(PresentTiming, CanonicalSlotsSaturateClockEdgesWithoutOverflowOrDuplicates) {
+    for (auto start : {Clock::time_point::min(), Clock::time_point::max() - 2ms}) {
+        CanonicalPresentPacer pacer;
+        auto now = start;
+        ASSERT_TRUE(pacer.Present([] { return true; }, [&] { return now; }, 1e-300));
+        EXPECT_FALSE(pacer.Present([] { return true; }, [&] { return now; }, 1e-300));
+        now += 1ms;
+        EXPECT_FALSE(pacer.Present([] { return true; }, [&] { return now; }, 1e-300));
+    }
+}

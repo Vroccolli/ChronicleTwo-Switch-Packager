@@ -44,6 +44,9 @@ PresentSettings   settings;
 PresentStats      stats;
 bool              tick_shown = true;
 PresentPacer      pacer;
+#ifdef __SWITCH__
+CanonicalPresentPacer canonical_pacer;
+#endif
 Clock::time_point last_log;
 FpsOverlay        overlay;
 std::int64_t      counted_tick = 0;
@@ -177,34 +180,51 @@ bool DisplayFrame(float alpha, bool present) {
 
 bool PresentCanonicalFrame() {
     CT_PROFILE_ZONE("Canonical image present");
-#ifdef __SWITCH__
-    // Canonical images are still rendered each game frame. Limit only display
-    // here, including the tick-end and non-interpolated paths, without sleeping
-    // on the simulation thread. Keep offline/unbounded capture unchanged.
-    if (!ClockUnbounded() && !pacer.Ready(Clock::now(), settings.max_fps)) {
-        return false;
-    }
-    ct::frame_timing::Scope timing(ct::frame_timing::Phase::CanonicalPresent);
-#endif
     const gfx::DisplayList *overlay_list = DisplayOverlayList();
     const double            seconds = ClockUnbounded() && settings.display_per_tick > 0 ? 0 : DisplaySeconds();
     const bool              fixed = MouseFixedActive(seconds);
     const bool              pointer = MenuMousePointerVisible();
     bool                    shown = false;
+    auto present = [&](auto render) {
+#ifdef __SWITCH__
+        auto timed_render = [&] {
+            ct::frame_timing::Scope timing(ct::frame_timing::Phase::CanonicalPresent);
+            return render();
+        };
+        auto actual_present = [&] { return pacer.Present(timed_render, Clock::now); };
+        if (!ClockUnbounded()) {
+            const bool native_cadence = !fixed && !pointer &&
+                !PresentNeedsIntermediateFrames(settings.max_fps, ClockTickRate(), wait_frames);
+            if (native_cadence) {
+                // Preserve the ordinary pacer's last successful start when
+                // entering from an interpolated or mouse-driven display.
+                if (!canonical_pacer.Active() && !pacer.Ready(Clock::now(), settings.max_fps)) return false;
+                return canonical_pacer.Present(actual_present, Clock::now, settings.max_fps);
+            }
+            canonical_pacer.Reset();
+            if (!pacer.Ready(Clock::now(), settings.max_fps)) return false;
+        } else {
+            canonical_pacer.Reset();
+        }
+        return actual_present();
+#else
+        return pacer.Present(render, Clock::now);
+#endif
+    };
 
     if (fixed || pointer) {
         gfx::RenderOptions options;
         options.present = true;
         options.overlay = overlay_list;
         options.suppressed_2d_key = MenuMouseReplacedHandKey();
-        shown = pacer.Present([&] { return MouseFixedRender(*mgPortLastList(), 1, options, 0); }, Clock::now);
+        shown = present([&] { return MouseFixedRender(*mgPortLastList(), 1, options, 0); });
     } else if (overlay_list != nullptr) {
         gfx::RenderOptions options;
         options.present = true;
         options.host = true;
-        shown = pacer.Present([&] { return gfx::RenderList(*overlay_list, 1.0f, options); }, Clock::now);
+        shown = present([&] { return gfx::RenderList(*overlay_list, 1.0f, options); });
     } else {
-        shown = pacer.Present(gfx::PresentCanonical, Clock::now);
+        shown = present(gfx::PresentCanonical);
     }
 
     if (shown) {
@@ -278,13 +298,20 @@ bool BetweenTicks(double fraction, Clock::time_point next_tick) {
 #endif
     if (!intermediate_frames && !PresentMouseActive()) {
         if (!tick_shown) {
+#ifdef __SWITCH__
+            tick_shown = PresentCanonicalFrame();
+#else
             PresentCanonicalFrame();
             tick_shown = true;
+#endif
         }
 
         return false;
     }
 
+#ifdef __SWITCH__
+    canonical_pacer.Reset();
+#endif
     const auto decision = pacer.Next(Clock::now(), next_tick, settings.max_fps);
     if (decision.action == PresentPacer::Action::Tick) {
         return false;
@@ -550,8 +577,12 @@ void PresentTickEnd() {
         }
     }
 
+#ifdef __SWITCH__
+    tick_shown = PresentCanonicalFrame();
+#else
     PresentCanonicalFrame();
     tick_shown = true;
+#endif
 }
 
 std::string PresentFpsText() {
