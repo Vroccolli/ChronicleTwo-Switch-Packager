@@ -164,6 +164,10 @@ def main():
             code, diagnostic = 124, "compiler timeout after 90 seconds"
         (output / name).write_text(diagnostic, encoding="utf-8")
         dependencies=[]
+        if args.linkage and original.parent == args.pc_build.resolve() / "ps2_src" and original.name == "menudraw.cpp":
+            for dependency in (original, ROOT / "port/include/stubs/menudraw.hpp", ROOT / "scripts/switch/prepare_sources.py"):
+                dependencies.append(dict(path=dependency.relative_to(ROOT).as_posix(),
+                    sha256=hashlib.sha256(dependency.read_bytes()).hexdigest()))
         if args.services and original in (ROOT / "port/src/present.cpp", ROOT / "port/src/mglib.cpp",
                 ROOT / "tools/kazarov/src/cpp/gfx/displaylist.cpp"):
             dependency=ROOT / "port/switch/gfx/frame_timing.hpp"

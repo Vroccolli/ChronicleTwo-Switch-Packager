@@ -52,6 +52,18 @@ def prepare_source(source, output):
         "menusys.cpp": [("(int) *(void **) &MenuCommonInfo->cursor", "MenuCommonInfo->cursor")],
         # Preserve the exact byte values with explicit signed-char conversion.
         "menuaqua.cpp": [("0x05, 0xF9, 0x01, 0xBB, 0x03", "0x05, static_cast<char>(0xF9), 0x01, static_cast<char>(0xBB), 0x03")],
+        # The recovered sparkle code indexed beyond the first row of float[4][2].
+        # GCC may remove the loop exit after proving those iterations undefined.
+        # Use the eight-float table expected by the rectangle conversion helper.
+        "menudraw.cpp": [
+            ("float         corners[4][2];", "float         corners[8];"),
+            ("ConvMGFRECTtoFLOATtbl(star_rect, corners[0]);", "ConvMGFRECTtoFLOATtbl(star_rect, corners);"),
+            ("dx = scale * ((float) center_x - corners[k][0]);", "dx = scale * ((float) center_x - corners[k * 2]);"),
+            ("dy = scale * ((float) center_y - corners[k][1]);", "dy = scale * ((float) center_y - corners[k * 2 + 1]);"),
+            ("corners[k][0] = center_x + dx * cos_angle - dy * sin_angle;", "corners[k * 2] = center_x + dx * cos_angle - dy * sin_angle;"),
+            ("corners[k][1] = center_y + dx * sin_angle + dy * cos_angle;", "corners[k * 2 + 1] = center_y + dx * sin_angle + dy * cos_angle;"),
+            ("prim->Vertex((int) corners[0][n], (int) corners[0][n + 1], 0);", "prim->Vertex((int) corners[n], (int) corners[n + 1], 0);"),
+        ],
     }.get(source.name, [])
     for before, after in fixups:
         if text.count(before) != 1:

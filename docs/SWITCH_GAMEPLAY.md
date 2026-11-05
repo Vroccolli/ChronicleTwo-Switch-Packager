@@ -210,3 +210,49 @@ those two internal stages. With zero-copy enabled, this path also skips the
 CPU swizzle fallback. No driver synchronization was removed: image readiness
 is required for correct presentation. Source/provenance is saved under
 `.kazarov/switch/nvk-memory-source/wsi-switch-source.json`.
+
+## Preview 0.7.8: spectrumised-item icon crash
+
+The user reported an error while creating a spectrumised item. The requested
+log pull is retained under
+`port/build/switch/hardware-pulls/error-0.7.7-20261105T113845Z`. The latest
+Atmosphere crash report, `01793879130_01002ff008c24000.log`, reports a data
+abort at module offset `0x24d554`. Its module build ID
+`495ef2c5b2f42dfe140dc984bac09f7ac3e3043d` matches the preserved 0.7.7 ELF.
+Symbolization resolves the PC/LR to `DrawItemIconEffect2`; the caller resolves
+to `MenuItemModeItemDraw`. Disassembly shows the faulting load advances through
+the local UV table, with its pointer reaching the main stack's upper boundary.
+
+The recovered function declares `float corners[4][2]` and then uses
+`corners[0][n]` for `n = k * 2`, reading outside the first two-element row.
+GCC's optimized ARM64 output removes the inner loop's exit check after those
+undefined accesses, causing unbounded UV reads and stack writes. The Switch
+source-generation fix uses one `float corners[8]` table, retaining the same
+eight coordinate values, rotation, UV order and four vertices per sparkle.
+Recovered PS2 source and PC generated output remain unchanged. Fixups require
+each exact source seam once, and the ARM64 audit records the generated unit's
+source/stub/generator dependencies for reuse checks.
+
+The actual corrected generated function is compiled and run by
+`scripts/switch/test_icon_effect.py`. It verifies zero through five active
+sparkles, exact vertex and UV sequences, draw/flush counts and null inputs,
+with a five-second execution bound. The test also checks that PC output is
+unchanged. All four existing source-generation tests pass. The corrected full
+unit compiles with the production optimized ARM64 command, and all 427 engine
+objects link. Creating a spectrumised item still needs a hardware retest.
+The new ELF's disassembly also restores the inner loop's compare and conditional
+backedge after `Vertex`, followed by `Flush`; the crashed ELF instead branched
+unconditionally. The corrected function disassembly is retained as
+`port/build/switch/game/icon-effect-disassembly-0.7.8.txt`.
+The 39,884,997-byte 0.7.8 NRO was uploaded alone and verified by remote size
+and complete SHA-256 readback: `f192b062ddfa319e2af00796908b5ec82bfe5973e4c9abf8168771c633e33e9e`.
+Receipt: `port/build/switch/game/app-upload-verification-0.7.8.json`.
+
+The 0.7.7 performance run contains 635 FPS samples, 450 at or above 20 FPS and
+11 below 10 FPS, with a maximum of 28.9 FPS. None of the 131 timing windows
+records an extra display render or CPU matching call. Queue-present's largest
+window mean is 63,907 us and largest recorded call is 71,224 us; the earlier
+sustained 170–205 ms extra-pass waits are absent from this run. This supports
+the intended path change, but it is not a controlled stock-clock benchmark
+or proof of steady 30 FPS. Heavier scenes and presentation pacing still need
+optimization.
