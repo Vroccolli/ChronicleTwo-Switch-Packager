@@ -10,9 +10,12 @@ files and validates 1,398 scripts, then stops on GPU memory selection. Renderer
 probe 0.6.1 fixes that selection and passes all four pixel checks on hardware.
 The user has booted through the actual game menus, intro and gameplay. Preview
 0.7.3 is release-optimized and the user reports saving works and 30 FPS with
-their overclock. See [the gameplay/performance checkpoint](SWITCH_GAMEPLAY.md)
-for evidence and remaining stock-performance, audio and loading-screen work.
-The goal remains active for that requested follow-up work.
+their overclock. The user confirms the later loading screen works and audio
+sounds better. The 0.7.7 hardware logs show the extra display pass and its
+sustained 170–205 ms waits are absent, with heavy scenes still below 30 FPS.
+Preview 0.7.8 is uploaded and verified with a spectrumised-item sparkle crash
+fix, awaiting hardware confirmation. See [the gameplay/performance checkpoint](SWITCH_GAMEPLAY.md)
+for evidence and the remaining performance, pacing and crash retests.
 
 ## Earlier bring-up checkpoints
 
