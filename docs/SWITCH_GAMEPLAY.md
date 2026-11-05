@@ -244,6 +244,11 @@ The new ELF's disassembly also restores the inner loop's compare and conditional
 backedge after `Vertex`, followed by `Flush`; the crashed ELF instead branched
 unconditionally. The corrected function disassembly is retained as
 `port/build/switch/game/icon-effect-disassembly-0.7.8.txt`.
+Running the same test with `--sanitize` also passes under UBSan. Its negative
+control substitutes the original recovered function into the same harness and
+requires an out-of-bounds diagnostic; the original fails while the corrected
+flat table passes. The diagnostic is retained under
+`port/build/switch-icon-effect-tests/original-ubsan.txt`.
 The 39,884,997-byte 0.7.8 NRO was uploaded alone and verified by remote size
 and complete SHA-256 readback: `f192b062ddfa319e2af00796908b5ec82bfe5973e4c9abf8168771c633e33e9e`.
 Receipt: `port/build/switch/game/app-upload-verification-0.7.8.json`.

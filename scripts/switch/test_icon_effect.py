@@ -22,6 +22,7 @@ def function(text, name):
 def main():
     args = argparse.ArgumentParser(description=__doc__)
     args.add_argument('--compiler', type=Path, default=ROOT / '.kazarov/windows/deps/llvm/llvm-mingw-20260922-ucrt-x86_64/bin/clang++.exe')
+    args.add_argument('--sanitize', action='store_true', help='run UBSan and verify it rejects the original row indexing')
     args = args.parse_args()
     out = ROOT / 'port/build/switch-icon-effect-tests'
     out.mkdir(parents=True, exist_ok=True)
@@ -95,8 +96,25 @@ int main() {
     source = out / 'icon_effect.cpp'
     source.write_text(code)
     executable = out / 'icon_effect.exe'
-    subprocess.run([str(args.compiler), '-std=c++17', '-O2', '-static', str(source), '-o', str(executable)], check=True)
+    flags = ['-std=c++17', '-O2', '-static']
+    if args.sanitize:
+        flags += ['-fsanitize=undefined', '-fno-sanitize-recover=all']
+    subprocess.run([str(args.compiler), *flags, str(source), '-o', str(executable)], check=True)
     subprocess.run([str(executable)], check=True, timeout=5)
+    if args.sanitize:
+        # A negative control proves the harness reaches the recovered defect,
+        # rather than passing only an inactive sparkle path.
+        negative = code.replace(function(text, 'DrawItemIconEffect2'),
+                                function(before.decode('latin-1'), 'DrawItemIconEffect2'))
+        bad_source = out / 'icon_effect_original.cpp'
+        bad_executable = out / 'icon_effect_original.exe'
+        bad_source.write_text(negative)
+        subprocess.run([str(args.compiler), *flags, str(bad_source), '-o', str(bad_executable)], check=True)
+        result = subprocess.run([str(bad_executable)], capture_output=True, text=True, timeout=5)
+        if result.returncode == 0 or 'out of bounds' not in result.stderr:
+            raise RuntimeError('Original sparkle defect was not detected: ' + result.stderr)
+        (out / 'original-ubsan.txt').write_text(result.stderr)
+        print('PASS: UBSan rejects original row indexing and accepts corrected flat table')
     assert original.read_bytes() == before, 'PC reference output changed'
 
 
