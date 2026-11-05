@@ -391,3 +391,30 @@ size and SHA-256 readback (`app-upload-verification-0.7.11.json`).
 The PC game and test targets also rebuilt successfully (30.8 seconds); the
 existing source-generation checks pass 4/4. This is a diagnostic build; no
 particle cleanup fix is claimed yet.
+
+
+## Archived-build comparison
+
+The user recalls this same window-break effect clearing in the 0.7.1–0.7.3
+period and reports it present by 0.7.8. Treat this as a reported regression
+window, pending a same-scene comparison. This takes priority over assuming an
+inherited particle-lifetime bug. Material changes in this interval include
+release optimization (0.7.3), audio/loading integration (0.7.4), canonical
+presentation capping (0.7.5) and reuse instead of an extra display pass (0.7.7).
+The 0.7.8 source fix concerns item-icon sparkle bounds, not this window effect.
+Neither optimization nor the presentation change is established as the cause.
+
+For the user's requested comparison, eight original archived NROs (0.7.1 through
+0.7.8) are staged under `port/build/switch/game/regression-comparison-0.7.1-0.7.8`.
+Each is checked against its archived build manifest and named
+`ChronicleTwo-0.7.N.nro` for separate installation in the dedicated app folder.
+They retain their original embedded versions and share the existing absolute
+game run directory; no assets, saves or config are copied for the comparison.
+The current `chronicletwo-switch.nro` is retained. Deployment verification is
+recorded in `port/build/switch/game/regression-comparison-verification.json`.
+All eight remote files now match the original archived sizes and full SHA-256
+hashes; the current build was not replaced.
+Compare the same window sequence, closing completely between versions, and
+record the last version that clears and the first that freezes. Normal logs
+are shared and overwritten by the next launch, so retrieve any needed run's
+logs before starting the following version.
