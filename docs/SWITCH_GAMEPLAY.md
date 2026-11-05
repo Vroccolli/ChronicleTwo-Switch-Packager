@@ -42,6 +42,15 @@ changed by this work. Saved metrics under
 and zero mixer timing-budget misses while grainy audio is still reported.
 There is no controlled stock-clock before/after benchmark yet.
 
+The configured maximum currently limits interpolated presentations, but
+`PresentTickEnd()` and the non-interpolated branch of `BetweenTicks()` call
+`PresentCanonicalFrame()` without consulting `PresentPacer::Next()`. Thus
+the setting is not a strict 30 FPS ceiling: the captured light-scene samples
+above 30 FPS agree with the source. A correction must limit presentation
+without delaying the 60 Hz simulation or dropping canonical render state;
+the PC presentation regression suite also needs to retain its existing
+unlimited/offscreen behavior. This remains a performance follow-up.
+
 ## Switch save publication
 
 The save failure was caused by desktop filesystem assumptions: directory
@@ -91,3 +100,6 @@ The 39,880,901-byte NRO was uploaded alone and verified by remote size and full
 SHA-256 readback (`a4ed59b6335e67a21d2a2a218df0bb4ea44b1fda8e9b861da095cb892bf961d3`).
 Receipt: `port/build/switch/game/app-upload-verification-0.7.4.json`.
 Loading-screen appearance and audio improvement require a hardware retest.
+An FTP read immediately after deployment still returned a stdout header of
+0.7.3 and no `startup-stage.txt`; those old logs cannot verify 0.7.4. They were
+retained under `port/build/switch/hardware-pulls/preview-0.7.4-20261105T101614Z`.
