@@ -45,11 +45,9 @@ There is no controlled stock-clock before/after benchmark yet.
 The configured maximum currently limits interpolated presentations, but
 `PresentTickEnd()` and the non-interpolated branch of `BetweenTicks()` call
 `PresentCanonicalFrame()` without consulting `PresentPacer::Next()`. Thus
-the setting is not a strict 30 FPS ceiling: the captured light-scene samples
-above 30 FPS agree with the source. A correction must limit presentation
-without delaying the 60 Hz simulation or dropping canonical render state;
-the PC presentation regression suite also needs to retain its existing
-unlimited/offscreen behavior. This remains a performance follow-up.
+the setting was not a strict 30 FPS ceiling: the captured light-scene samples
+above 30 FPS agree with the 0.7.3 source. Preview 0.7.5 corrects this bypass
+as described below.
 
 ## Switch save publication
 
@@ -103,3 +101,25 @@ Loading-screen appearance and audio improvement require a hardware retest.
 An FTP read immediately after deployment still returned a stdout header of
 0.7.3 and no `startup-stage.txt`; those old logs cannot verify 0.7.4. They were
 retained under `port/build/switch/hardware-pulls/preview-0.7.4-20261105T101614Z`.
+
+## Preview 0.7.5
+
+The Switch synchronous canonical presentation path now consults the same
+pacer as interpolated displays. When the next display is not due, it returns
+without waiting, leaving simulation and canonical rendering active. This
+covers both tick-end and non-interpolated presentations. Unbounded capture
+and the PC presentation path retain their previous behavior. This limits
+excess displays; it does not remove the cost of recording/rendering each
+canonical game frame or establish 30 FPS in heavy scenes.
+
+Eight presentation timing tests pass, including a deterministic 600-field
+simulation with 300 displays at a 30 FPS cap, shared canonical/interpolated
+deadlines, and no catch-up bursts after a stall. The PC game and test targets
+rebuild successfully. The changed presentation source compiles with the real
+ARM64 release command, and all 427 engine objects link successfully. The
+compile audit now tracks the presentation timing header as a source dependency
+for object reuse. Hardware frame pacing, startup appearance and audible audio
+improvement remain unverified until the user runs the updated game.
+The 39,880,901-byte NRO was deployed alone and fully size/SHA-256 readback
+verified. SHA-256: `fa50fc42d21711931d485bef8aee2f93f3714672e29d25a3a5bef7d9e4d5f545`.
+Receipt: `port/build/switch/game/app-upload-verification-0.7.5.json`.

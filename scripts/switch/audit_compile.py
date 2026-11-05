@@ -162,6 +162,10 @@ def main():
             code, diagnostic = 124, "compiler timeout after 90 seconds"
         (output / name).write_text(diagnostic, encoding="utf-8")
         dependencies=[]
+        if original == ROOT / "port/src/present.cpp":
+            dependency = ROOT / "port/src/present_timing.hpp"
+            dependencies.append(dict(path=dependency.relative_to(ROOT).as_posix(),
+                sha256=hashlib.sha256(dependency.read_bytes()).hexdigest()))
         if args.services and original == ROOT / "tools/kazarov/src/cpp/gfx/memory.cpp":
             for dependency in (original, ROOT / "port/switch/gfx/memory_policy.hpp"):
                 dependencies.append(dict(path=dependency.relative_to(ROOT).as_posix(),

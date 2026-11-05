@@ -19,6 +19,12 @@ public:
         Clock::time_point deadline;
     };
 
+    // A canonical image may be skipped while simulation continues. Unlike Next,
+    // this query has no simulation deadline and never asks its caller to wait.
+    [[nodiscard]] bool Ready(Clock::time_point now, double max_fps) const {
+        return Next(now, Clock::time_point::max(), max_fps).action == Action::Display;
+    }
+
     [[nodiscard]] Decision Next(Clock::time_point now, Clock::time_point next_tick, double max_fps) const {
         if (now >= next_tick) {
             return {.action = Action::Tick, .deadline = next_tick};

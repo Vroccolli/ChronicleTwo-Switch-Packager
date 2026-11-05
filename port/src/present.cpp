@@ -171,6 +171,14 @@ bool DisplayFrame(float alpha, bool present) {
 
 bool PresentCanonicalFrame() {
     CT_PROFILE_ZONE("Canonical image present");
+#ifdef __SWITCH__
+    // Canonical images are still rendered each game frame. Limit only display
+    // here, including the tick-end and non-interpolated paths, without sleeping
+    // on the simulation thread. Keep offline/unbounded capture unchanged.
+    if (!ClockUnbounded() && !pacer.Ready(Clock::now(), settings.max_fps)) {
+        return false;
+    }
+#endif
     const gfx::DisplayList *overlay_list = DisplayOverlayList();
     const double            seconds = ClockUnbounded() && settings.display_per_tick > 0 ? 0 : DisplaySeconds();
     const bool              fixed = MouseFixedActive(seconds);

@@ -77,3 +77,36 @@ TEST(PresentTiming, TinyCapsAreOneFpsAndZeroIsUnlimited) {
     ASSERT_TRUE(pacer.Present([] { return true; }, [&] { return end; }));
     EXPECT_EQ(pacer.Next(end + 1ms, Clock::time_point::max(), 1e-12).action, Action::Tick);
 }
+
+TEST(PresentTiming, CanonicalCapKeepsSixtySimulationFieldsAndThirtyDisplays) {
+    PresentPacer pacer;
+    int fields = 0;
+    int displays = 0;
+    for (int field = 0; field < 600; ++field) {
+        // Absolute field deadlines avoid accumulating rounded clock durations.
+        const auto now = origin + std::chrono::nanoseconds(1000000000LL * field / 60);
+        ++fields;
+        if (pacer.Ready(now, 30)) {
+            ASSERT_TRUE(pacer.Present([] { return true; }, [&] { return now; }));
+            ++displays;
+        }
+    }
+    EXPECT_EQ(fields, 600);
+    EXPECT_EQ(displays, 300);
+}
+
+TEST(PresentTiming, CanonicalCapSharesInterpolatedDeadlineAndSkipsStallDebt) {
+    PresentPacer pacer;
+    auto now = origin;
+    ASSERT_TRUE(pacer.Ready(now, 30));
+    ASSERT_TRUE(pacer.Present([] { return true; }, [&] { return now; }));
+    now += 16ms;
+    EXPECT_FALSE(pacer.Ready(now, 30));
+    EXPECT_TRUE(pacer.Ready(now, 0));
+    EXPECT_EQ(pacer.Next(now, now + 1ms, 30).action, Action::Tick);
+    now += 1s;
+    ASSERT_TRUE(pacer.Ready(now, 30));
+    ASSERT_TRUE(pacer.Present([] { return true; }, [&] { return now; }));
+    EXPECT_FALSE(pacer.Ready(now, 30));
+    EXPECT_EQ(pacer.Next(now, now + 1s, 30).action, Action::Wait);
+}
