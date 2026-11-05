@@ -37,8 +37,22 @@ def main():
     shutil.copy2(nro,stage/nro.name)
     # Match the PC install: controller/keyboard glyphs live beside the binary.
     shutil.copytree(ROOT/"port/assets/glyphs",stage/"glyphs",dirs_exist_ok=True)
+    proof_path=out/"data-source.json"
+    if proof_path.exists():
+        proof=json.loads(proof_path.read_text())
+        archive=Path(proof["source"])
+        stat=archive.stat()
+        digest=proof["raw_file_sha256"]
+        if not proof["pc_reference_verifier_pass"] or stat.st_size!=proof["bytes"] or stat.st_mtime_ns!=proof["source_mtime_ns"] or len(digest)!=64 or any(c not in "0123456789abcdef" for c in digest):
+            raise RuntimeError("Prepared game archive changed; regenerate its verified source record")
+        (stage/"game").mkdir(exist_ok=True)
+        (stage/"game/archive.sha256").write_text(f'{proof["bytes"]} {digest}\n')
+    else:
+        (stage/"game/archive.sha256").unlink(missing_ok=True)
+    asset_paths=sorted((stage/"glyphs").rglob("*"))
+    if (stage/"game/archive.sha256").exists():asset_paths.append(stage/"game/archive.sha256")
     runtime_assets=[dict(path=p.relative_to(stage).as_posix(),bytes=p.stat().st_size,
-        sha256=hashlib.sha256(p.read_bytes()).hexdigest()) for p in sorted((stage/"glyphs").rglob("*")) if p.is_file()]
+        sha256=hashlib.sha256(p.read_bytes()).hexdigest()) for p in asset_paths if p.is_file()]
     manifest=dict(version="0.7.0",engine_linked=True,full_engine=True,hardware_tested=False,
         compiled=report["compiled"],total=report["total"],commands=commands,
         nro_sha256=hashlib.sha256(nro.read_bytes()).hexdigest(),elf_sha256=hashlib.sha256(elf.read_bytes()).hexdigest(),

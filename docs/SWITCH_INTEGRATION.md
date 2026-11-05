@@ -132,7 +132,7 @@ selected archive, datapack, Luau and crash regressions pass.
 
 `build_game.py` now orchestrates the pinned dependency builds, native engine
 compile/link and NRO packaging. The resulting `chronicletwo-switch.nro` is
-44,861,637 bytes. It contains the real game `MainLoop`, renderer, native
+44,882,117 bytes. It contains the real game `MainLoop`, renderer, native
 platform adapters and data/media/script libraries. Hardware game boot is not
 yet established. The default run root is the dedicated
 `/switch/ChronicleTwo-PC-Switch/game` on the SD device; explicit launch arguments can
@@ -164,9 +164,23 @@ reader. The host harness permits the archive's real movies up to 179 MB while
 retaining a 256 MB per-entry allocation limit. The result is recorded in
 `port/build/switch-data-tests/full-game-archive-verification.json`.
 The archive and its existing metadata are transferring into the dedicated
-game folder. Only after complete byte/hash readback verification will the
-game NRO be published for testing. Existing saves and the prototype remain
-outside this staging workflow. Retail data and generated outputs stay out of Git.
+game folder. The preview now accepts a host-generated `game/archive.sha256`
+containing the verified archive's byte count and raw SHA-256. Before entering
+the engine, it streams the entire SD file through libnx's hardware-accelerated
+SHA-256 and writes `game/asset-verification.json`, including actual/expected
+bytes and hashes. A mismatch, incomplete archive or report-write failure
+refuses boot. With no sidecar, it explicitly reports that transfer verification
+is unavailable; that path supplies no checksum evidence.
+
+This permits on-device full-content verification after the upload completes,
+without requiring a second 3.8 GB transfer back over FTP. The native check
+builds and links, but its hardware result is pending. The host must validate
+the saved result against its own source digest before claiming transfer
+verification. Small app files still receive size and SHA-256 readback checks.
+Packaging includes the sidecar only when the recorded PC source remains
+unchanged and its original verifier passed. Existing saves and the prototype
+remain outside this staging workflow. Retail data and generated outputs stay
+out of Git.
 
 Reproduce the complete native build with
 `python scripts/switch/build_game.py --jobs 4`, or the `switch_game` host CMake

@@ -52,7 +52,8 @@ def main():
     env = dict(os.environ, DEVKITPRO=sdk.as_posix())
     commands, extra_sources = [], []
     for path in ["port/switch/runtime/platform_memory.c", "port/switch/runtime/fiber_switch.S",
-                 "port/switch/crash/platform.c", "port/switch/platform/bootstrap.c"]:
+                 "port/switch/crash/platform.c", "port/switch/platform/bootstrap.c",
+                 "port/switch/platform/asset_verify.c"]:
         source = ROOT / path
         obj = out / (source.stem + ".o")
         command = [str(cc), *arch, "-funwind-tables", "-D__SWITCH__", "-I" + str(sdk / "libnx/include"),

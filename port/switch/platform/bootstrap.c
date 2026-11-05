@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 size_t __nx_heap_size = 0;
+int ctSwitchVerifyGameArchive(void);
 void ctSwitchBootstrap(void) {
     const char *root="sdmc:/switch/ChronicleTwo-PC-Switch/game";
     mkdir(root,0777);
@@ -21,6 +22,10 @@ void ctSwitchBootstrap(void) {
     // as relative and would otherwise prepend the launch working directory.
     if (chdir("sdmc:/") != 0) {
         perror("Cannot select SD root");
+        exit(EXIT_FAILURE);
+    }
+    if (ctSwitchVerifyGameArchive()!=0) {
+        fputs("Game archive verification failed; refusing to enter the game\n",stderr);
         exit(EXIT_FAILURE);
     }
 }
