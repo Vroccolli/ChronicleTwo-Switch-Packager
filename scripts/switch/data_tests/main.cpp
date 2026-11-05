@@ -21,7 +21,9 @@ int main(int argc,char **argv) {
         std::printf("count %zu\n",archive->entries.size());
         for (size_t i=0;i<archive->entries.size();++i) {
             const auto &entry=archive->entries[i];
-            if (entry.size>64*1024*1024) throw std::runtime_error("host test allocation limit");
+            // The prepared game includes movies up to 179 MB. Keep a bounded
+            // host allocation while exercising those real archive entries too.
+            if (entry.size>256*1024*1024) throw std::runtime_error("host test allocation limit");
             std::vector<uint8_t> bytes(entry.size);
             ct::archive::archive_read_entry(*archive,i,bytes);
             std::printf("%s\t%llu\t%08x\n",entry.name.c_str(),static_cast<unsigned long long>(entry.size),entry.crc);

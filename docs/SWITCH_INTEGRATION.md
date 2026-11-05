@@ -149,6 +149,12 @@ PNG textures. Its 91,149-entry archive is 3,809,445,609 bytes. The marker's
 `output_sha256` is a digest of uncompressed entry contents, not a raw-file
 checksum. The separately computed raw-file SHA-256 for transfer verification
 is `b1133ba1c80f278b8236ba09b888c08757d97debf9fa84c90d038e0f3a28e2f4`.
+The native Switch archive implementation also passes a host run against every
+one of these **91,149 entries**, decoding each payload and verifying its CRC.
+All entry names, sizes and CRC metadata independently match Python's ZIP
+reader. The host harness permits the archive's real movies up to 179 MB while
+retaining a 256 MB per-entry allocation limit. The result is recorded in
+`port/build/switch-data-tests/full-game-archive-verification.json`.
 The archive and its existing metadata are transferring into the dedicated
 game folder. Only after complete byte/hash readback verification will the
 game NRO be published for testing. Existing saves and the prototype remain
