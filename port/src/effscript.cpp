@@ -32,16 +32,20 @@
 #include "mglib_port.hpp"
 #include "scene.hpp"
 extern "C" const char *ctSwitchGameBuildId();
+void ctSwitchWriteParticleState(FILE *file);
 
 // Closed after each bounded snapshot so FTP can read it during gameplay.
 void ctSwitchReportEffectState() {
     using Clock = std::chrono::steady_clock;
     static auto previous = Clock::now();
     const auto now = Clock::now();
-    if (now - previous < std::chrono::seconds(5)) return;
+    if (now - previous < std::chrono::seconds(2)) return;
     previous = now;
     FILE *file = std::fopen("sdmc:/switch/ChronicleTwo-PC-Switch/game/effect-state.txt", "wb");
     if (!file) return;
+    static const auto session = std::chrono::system_clock::now().time_since_epoch().count();
+    static unsigned sequence = 0;
+    std::fprintf(file, "session %lld sequence %u\n", static_cast<long long>(session), sequence);
     std::fprintf(file, "%s\nframe %llu, loop %d\n", ctSwitchGameBuildId(),
                  static_cast<unsigned long long>(mgPortFrameCount()), GetNowLoopNo());
     CScene *scene = GetMainScene();
@@ -83,7 +87,21 @@ void ctSwitchReportEffectState() {
         }
     } else std::fputs("No active main scene\n", file);
     std::fprintf(file, "Detailed scripts %u (maximum 16); sprite scans bounded to 256 per script\n", details);
+    ctSwitchWriteParticleState(file);
     std::fclose(file);
+    // Retain two minutes without growing a log or requiring a timed pause.
+    char path[160];
+    std::snprintf(path, sizeof(path), "sdmc:/switch/ChronicleTwo-PC-Switch/game/effect-history-%02u.txt", sequence++ % 60);
+    FILE *source = std::fopen("sdmc:/switch/ChronicleTwo-PC-Switch/game/effect-state.txt", "rb");
+    FILE *history = source ? std::fopen(path, "wb") : nullptr;
+    if (history) {
+        char buffer[4096];
+        std::size_t count;
+        while ((count = std::fread(buffer, 1, sizeof(buffer), source)) != 0)
+            if (std::fwrite(buffer, 1, count, history) != count) break;
+        std::fclose(history);
+    }
+    if (source) std::fclose(source);
 }
 #endif
 

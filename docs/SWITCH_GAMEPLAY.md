@@ -351,3 +351,43 @@ and effect-state snapshots still require a hardware reproduction.
 The 39,889,093-byte NRO was uploaded alone and verified by exact size and
 complete remote SHA-256 readback: `2bae83ac793d1af609f7d7a1d24c1147b318345bc149dfd90ebab7c02009230f`.
 Receipt: `port/build/switch/game/app-upload-verification-0.7.10.json`.
+
+
+## Window-break persistence test: 0.7.11
+
+The seven Album captures `2026110516394000` through `2026110516400000`
+show the white window-break cloud, glass and larger fragments persisting in
+world space for about 20 seconds while characters and camera continue moving.
+Retrieved originals: `port/build/switch/hardware-pulls/latest-seven-20261105T213329Z`.
+This supports a frozen effect/update or retained draw-packet investigation;
+it does not establish which path is responsible.
+
+The 0.7.10 live snapshots showed no scripted effects after the transition.
+That diagnostic missed ordinary particle pools and replaced its previous
+snapshot, so it cannot establish that the visible effect was cleaned up.
+
+Diagnostic preview 0.7.11 observes ordinary manager Step/Draw calls in generated
+Switch-only source copies. It copies bounded samples of age, lifetime, opacity
+and position, alongside cumulative call counts and last-seen frame numbers.
+It retains at most 64 manager records, scans at most 512 particles per sample,
+and never dereferences retained pool/manager pointers when reporting. A call
+count records entry into Step, including early returns; it is not proof each
+particle advanced. Samples are refreshed at most twice per second per manager.
+
+Both scripted and ordinary observations are written every two seconds, closed
+for live FTP access, and retained in 60 rotating `effect-history-NN.txt` slots
+(two minutes). Each includes session and sequence identifiers, so old slots
+from another run can be distinguished. `scripts/switch/pull_effect_history.py`
+retrieves and orders these read-only; ordinary stdout/stderr can remain locked
+while running. Play through the window break, then close normally and request
+a pull within two minutes of gameplay. No timed pause is required.
+
+The observer's actual code passes an optimized UBSan host harness covering
+scan bounds, ageing samples, update/draw counts, pool reuse, reporting after
+pool storage expires, and bounded record eviction. The complete 427-object
+ARM64 release engine links with zero unresolved or duplicate symbols.
+NRO-only deployment to `/switch/ChronicleTwo-PC-Switch` has matching remote
+size and SHA-256 readback (`app-upload-verification-0.7.11.json`).
+The PC game and test targets also rebuilt successfully (30.8 seconds); the
+existing source-generation checks pass 4/4. This is a diagnostic build; no
+particle cleanup fix is claimed yet.

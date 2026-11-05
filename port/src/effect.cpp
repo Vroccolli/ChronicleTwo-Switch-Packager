@@ -4,6 +4,7 @@
 #include <array>
 #include <cstddef>
 #include <memory>
+#include <limits>
 #include <string_view>
 #include <utility>
 
@@ -12,6 +13,104 @@
 #include "effect.hpp"
 #include "scriptinterpreter.hpp"
 #include "stubs/effect.hpp"
+
+#ifdef __SWITCH__
+#include <chrono>
+#include <cmath>
+#include <cstdio>
+#include <cstring>
+#include "mglib_port.hpp"
+
+namespace {
+struct ParticleSample {
+    int slot = 0, age = 0, life = 0;
+    float alpha = 0, x = 0, y = 0, z = 0;
+};
+struct ParticleObservation {
+    const CEffectManager *identity = nullptr; // Compared only; never dereferenced later.
+    const CEffect *pool = nullptr;
+    char name[33]{}, image[33]{};
+    unsigned long long steps = 0, draws = 0, step_frame = 0, draw_frame = 0, sample_frame = 0;
+    std::chrono::steady_clock::time_point sampled{};
+    int run = 0, total = 0, scanned = 0, active = 0, expired = 0, nonfinite = 0;
+    int min_age = 0, max_age = 0;
+    std::array<ParticleSample, 4> samples{};
+    unsigned sample_count = 0;
+};
+std::array<ParticleObservation, 64> particle_observations;
+unsigned particle_evictions = 0;
+}
+
+// Observe at the actual update/draw sites. Keep copied values, never live pool pointers.
+void ctSwitchObserveParticles(const CEffectManager *manager, bool drawing) {
+    ParticleObservation *record = nullptr;
+    for (auto &entry : particle_observations) {
+        if (entry.identity == manager) { record = &entry; break; }
+    }
+    if (!record) {
+        for (auto &entry : particle_observations) {
+            if (!entry.identity) { record = &entry; break; }
+        }
+    }
+    if (!record) {
+        record = &*std::min_element(particle_observations.begin(), particle_observations.end(),
+            [](const auto &a, const auto &b) { return std::max(a.step_frame, a.draw_frame) < std::max(b.step_frame, b.draw_frame); });
+        ++particle_evictions;
+        *record = {};
+    }
+    if (record->identity != manager || record->pool != manager->effects ||
+        std::memcmp(record->name, manager->name, 32) != 0) {
+        *record = {};
+        record->identity = manager;
+        record->pool = manager->effects;
+        std::memcpy(record->name, manager->name, 32);
+        std::memcpy(record->image, manager->img_name, 32);
+    }
+    const auto frame = static_cast<unsigned long long>(mgPortFrameCount());
+    if (drawing) { ++record->draws; record->draw_frame = frame; }
+    else { ++record->steps; record->step_frame = frame; }
+    const auto now = std::chrono::steady_clock::now();
+    if (record->sampled.time_since_epoch().count() && now - record->sampled < std::chrono::milliseconds(500)) return;
+    record->sampled = now;
+    record->sample_frame = frame;
+    record->run = manager->run;
+    record->total = manager->effect_num;
+    record->scanned = manager->effects ? std::clamp(manager->effect_num, 0, 512) : 0;
+    record->active = record->expired = record->nonfinite = record->sample_count = 0;
+    record->min_age = std::numeric_limits<int>::max();
+    record->max_age = 0;
+    for (int i = 0; i < record->scanned; ++i) {
+        const auto &particle = manager->effects[i];
+        if (!particle.active) continue;
+        ++record->active;
+        record->expired += particle.frame > particle.param.life;
+        record->nonfinite += !std::isfinite(particle.alpha);
+        record->min_age = std::min(record->min_age, particle.frame);
+        record->max_age = std::max(record->max_age, particle.frame);
+        if (record->sample_count < record->samples.size()) {
+            record->samples[record->sample_count++] = {i, particle.frame, particle.param.life,
+                particle.alpha, particle.pos[0], particle.pos[1], particle.pos[2]};
+        }
+    }
+    if (!record->active) record->min_age = 0;
+}
+
+void ctSwitchWriteParticleState(FILE *file) {
+    std::fprintf(file, "Ordinary particles: 64 retained managers, 512 slots scanned per sample; evictions %u\n", particle_evictions);
+    for (const auto &entry : particle_observations) {
+        if (!entry.identity) continue;
+        std::fprintf(file, "pool %p name %.32s image %.32s run %d total %d scanned %d active %d expired %d nonfinite %d age %d..%d steps %llu draws %llu step-frame %llu draw-frame %llu sample-frame %llu\n",
+            static_cast<const void *>(entry.identity), entry.name, entry.image, entry.run, entry.total, entry.scanned,
+            entry.active, entry.expired, entry.nonfinite, entry.min_age, entry.max_age, entry.steps, entry.draws,
+            entry.step_frame, entry.draw_frame, entry.sample_frame);
+        for (unsigned i = 0; i < entry.sample_count; ++i) {
+            const auto &sample = entry.samples[i];
+            std::fprintf(file, " particle %d age %d life %d opacity %.4f xyz %.3f %.3f %.3f\n",
+                sample.slot, sample.age, sample.life, sample.alpha, sample.x, sample.y, sample.z);
+        }
+    }
+}
+#endif
 
 namespace {
 

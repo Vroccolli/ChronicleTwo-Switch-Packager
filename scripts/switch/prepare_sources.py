@@ -48,6 +48,10 @@ def prepare_source(source, output):
         names.add("MainBuffer")
     text, edits = externalize(original, names)
     fixups = {
+        "effect.cpp": [
+            ("void CEffectManager::Step(int frames) {", "void CEffectManager::Step(int frames) {\n    ctSwitchObserveParticles(this, false);"),
+            ("void CEffectManager::Draw() {", "void CEffectManager::Draw() {\n    ctSwitchObserveParticles(this, true);"),
+        ],
         # cursor is an int, not storage for an eight-byte native pointer.
         "menusys.cpp": [("(int) *(void **) &MenuCommonInfo->cursor", "MenuCommonInfo->cursor")],
         # Preserve the exact byte values with explicit signed-char conversion.
@@ -69,6 +73,8 @@ def prepare_source(source, output):
         if text.count(before) != 1:
             raise ValueError(f"{source}: expected one occurrence of {before}")
         text = text.replace(before, after)
+    if source.name == "effect.cpp":
+        text = "class CEffectManager;\nextern void ctSwitchObserveParticles(const CEffectManager *, bool);\n" + text
     if not edits and not fixups:
         return source
     output.mkdir(parents=True, exist_ok=True)
