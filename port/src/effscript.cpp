@@ -25,6 +25,67 @@
 #include "platform/datapacks.hpp"
 #include "platform/model_assets.hpp"
 #include "script_timing.hpp"
+#ifdef __SWITCH__
+#include <chrono>
+#include <cmath>
+#include "mainloop.hpp"
+#include "mglib_port.hpp"
+#include "scene.hpp"
+extern "C" const char *ctSwitchGameBuildId();
+
+// Closed after each bounded snapshot so FTP can read it during gameplay.
+void ctSwitchReportEffectState() {
+    using Clock = std::chrono::steady_clock;
+    static auto previous = Clock::now();
+    const auto now = Clock::now();
+    if (now - previous < std::chrono::seconds(5)) return;
+    previous = now;
+    FILE *file = std::fopen("sdmc:/switch/ChronicleTwo-PC-Switch/game/effect-state.txt", "wb");
+    if (!file) return;
+    std::fprintf(file, "%s\nframe %llu, loop %d\n", ctSwitchGameBuildId(),
+                 static_cast<unsigned long long>(mgPortFrameCount()), GetNowLoopNo());
+    CScene *scene = GetMainScene();
+    unsigned details = 0;
+    if (scene) {
+        for (int slot = 0; slot < 32; ++slot) {
+            const auto *manager = scene->GetEffect(slot);
+            if (!manager) continue;
+            unsigned scripts = 0;
+            for (const auto *script = manager->head; script && scripts < 64; script = script->next, ++scripts) {
+                if (details >= 16) continue;
+                ++details;
+                const int count = script->sprite ? std::clamp(script->sprite_num, 0, 256) : 0;
+                int visible = 0, nonfinite = 0;
+                float low = 255.0f, high = 0.0f;
+                for (int i = 0; i < count; ++i) {
+                    const auto &sprite = script->sprite[i];
+                    if (!sprite.draw_flag) continue;
+                    ++visible;
+                    if (std::isfinite(sprite.color[3])) {
+                        low = std::min(low, sprite.color[3]);
+                        high = std::max(high, sprite.color[3]);
+                    } else ++nonfinite;
+                }
+                std::fprintf(file, "manager %d script %p state %d program %d end %d pc %p texture %.32s sprites %d scanned %d visible %d opacity %.3f..%.3f nonfinite %d\n",
+                    slot, static_cast<const void *>(script), script->state, script->prog_no, script->run.end,
+                    static_cast<const void *>(script->run.pc), script->tex_name, script->sprite_num, count, visible,
+                    visible ? low : 0.0f, high, nonfinite);
+                unsigned samples = 0;
+                for (int i = 0; i < count && samples < 3; ++i) {
+                    const auto &sprite = script->sprite[i];
+                    if (!sprite.draw_flag) continue;
+                    ++samples;
+                    std::fprintf(file, " sprite %d xyz %.3f %.3f %.3f opacity %.3f scale %.3f %.3f blend %d\n",
+                        i, sprite.pos[0], sprite.pos[1], sprite.pos[2], sprite.color[3], sprite.scale[0], sprite.scale[1], sprite.alpha);
+                }
+            }
+            std::fprintf(file, "manager %d scanned scripts %u%s\n", slot, scripts, scripts == 64 ? " (bounded)" : "");
+        }
+    } else std::fputs("No active main scene\n", file);
+    std::fprintf(file, "Detailed scripts %u (maximum 16); sprite scans bounded to 256 per script\n", details);
+    std::fclose(file);
+}
+#endif
 
 int SetEffectScript(CRunScript *script, char *program, mgCMemory *memory);
 

@@ -44,6 +44,7 @@ extern "C" void ctSwitchBootstrap();
 extern "C" int ctSwitchVerifyGameArchive();
 extern "C" void ctSwitchLoadingStage(const char *stage);
 extern "C" void ctSwitchLoadingFinished();
+void ctSwitchReportEffectState();
 #endif
 
 namespace {
@@ -244,6 +245,9 @@ void PumpHost() {
         std::exit(kExitOk);
     }
     DisplayPump();
+#ifdef __SWITCH__
+    ctSwitchReportEffectState();
+#endif
     InputPoll();
     InputScriptApply(mgPortFrameCount());
 

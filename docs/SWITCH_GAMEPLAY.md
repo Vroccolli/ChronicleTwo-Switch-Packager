@@ -307,3 +307,47 @@ the dedicated helper, then verified by exact size and complete remote SHA-256
 readback. Size: 39,884,997 bytes. SHA-256:
 `2516029c23d5fc095d89c74f64959c6986a61c86349f9578c6318e34541ee809`.
 Receipt: `port/build/switch/game/app-upload-verification-0.7.9.json`.
+
+### 0.7.9 hardware playback and lingering particles
+
+The user reports 0.7.9 is very playable. Its completed logs are retained under
+`port/build/switch/hardware-pulls/particle-logs-20261105T122529Z`. They include
+942 FPS samples, 259 at or above 29 FPS, with slower heavy scenes and transition
+stalls still present. A one-field timing window completed 291 end-frame calls
+and 150 canonical presentations, with following samples around 30 FPS. This
+demonstrates the intended pacing change from the earlier one-field 20 FPS
+plateau, without establishing steady 30 FPS throughout the game.
+
+The user also reports particles that remain in the room as the camera moves.
+The requested latest three Album captures are retained under
+`port/build/switch/hardware-pulls/latest-three`: 2026110504551300 (castle shards),
+2026110504570700 (blue energy with rectangular boundaries), and
+2026110507212000 (circus smoke). The first two filenames predate 0.7.9's session;
+the captures must not all be attributed to the newest build. Still images do
+not establish the duration of the effects or prove a common cause.
+
+Read-only source review found ordinary particles expire in `CEffect::Step`
+and billboard batches clear on `BeginCreatePacket`. Focused GCC bounds/loop
+audits of the three recovered effect units compiled without the earlier menu
+loop defect; an uninitialized-count warning remains a candidate only if an
+invalid random-mode enum is supplied. No speculative lifetime or blending fix
+has been applied.
+
+## Preview 0.7.10: live effect-state diagnostic
+
+Switch's game-thread pump now writes and closes `game/effect-state.txt` every
+five seconds. It samples scene effect-script states, program/end/PC fields,
+texture names, visible sprite counts, opacity ranges and a few world-space
+positions/scales. Work is bounded to 32 scene slots, 64 linked nodes per slot,
+16 detailed scripts, 256 sprites per detailed script and three sprite samples.
+This covers scripted effects; it does not inspect every ordinary particle pool.
+The file can be read over FTP without needing the main gameplay logs closed.
+The diagnostic observes state and does not change lifetime, emission or blending.
+
+The Switch source units compile with the production release commands and all
+427 engine objects link. The PC game and tests rebuild successfully; snapshot
+code and its call site are guarded by `__SWITCH__`. The lingering-particle cause
+and effect-state snapshots still require a hardware reproduction.
+The 39,889,093-byte NRO was uploaded alone and verified by exact size and
+complete remote SHA-256 readback: `2bae83ac793d1af609f7d7a1d24c1147b318345bc149dfd90ebab7c02009230f`.
+Receipt: `port/build/switch/game/app-upload-verification-0.7.10.json`.
