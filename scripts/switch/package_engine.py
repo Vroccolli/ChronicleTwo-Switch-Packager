@@ -25,7 +25,7 @@ def main():
     commands=[]; env=dict(os.environ,DEVKITPRO=sdk.as_posix())
     def run(command):
         commands.append([str(x) for x in command]);subprocess.run(commands[-1],env=env,check=True)
-    run([sdk/"tools/bin/nacptool.exe","--create","ChronicleTwo native Switch preview","ChronicleTwo contributors","0.7.1",nacp])
+    run([sdk/"tools/bin/nacptool.exe","--create","ChronicleTwo native Switch preview","ChronicleTwo contributors","0.7.4",nacp])
     run([sdk/"tools/bin/elf2nro.exe",elf,nro,"--nacp="+str(nacp),"--icon="+str(sdk/"libnx/default_icon.jpg")])
     symbols=subprocess.check_output([str(sdk/"devkitA64/bin/aarch64-none-elf-nm.exe"),"-C","--defined-only",str(elf)],text=True)
     for name in [" main","MainLoop(","gfx::RendererInit(","ctSwitchBootstrap","ctFiberSwap","__assert_func","ct::archive::open_archive("]:
@@ -53,11 +53,12 @@ def main():
     if (stage/"game/archive.sha256").exists():asset_paths.append(stage/"game/archive.sha256")
     runtime_assets=[dict(path=p.relative_to(stage).as_posix(),bytes=p.stat().st_size,
         sha256=hashlib.sha256(p.read_bytes()).hexdigest()) for p in asset_paths if p.is_file()]
-    manifest=dict(version="0.7.1",engine_linked=True,full_engine=True,hardware_tested=False,
+    manifest=dict(version="0.7.4",engine_linked=True,full_engine=True,hardware_tested=False,
+        optimization=report["optimization"],cpu_tuning=report["cpu_tuning"],
         compiled=report["compiled"],total=report["total"],commands=commands,
         nro_sha256=hashlib.sha256(nro.read_bytes()).hexdigest(),elf_sha256=hashlib.sha256(elf.read_bytes()).hexdigest(),
         default_run_root="/switch/ChronicleTwo-PC-Switch/game",default_device="sdmc",first_boot_graphics_thread="off",
-        runtime_assets=runtime_assets)
+        runtime_assets=runtime_assets,full_archive_checksum="opt-in: --verify-assets")
     (out/"build.json").write_text(json.dumps(manifest,indent=2))
     print(f"Built {nro}: {nro.stat().st_size} bytes; game execution not yet verified")
 

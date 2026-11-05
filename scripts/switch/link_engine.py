@@ -31,12 +31,17 @@ def main():
         if args.media_headers: audit_command += ["--media-headers", str(args.media_headers)]
         subprocess.run(audit_command, check=False)
     report = json.loads((audit / "report.json").read_text())
+    if report.get("optimization") != "-O2" or report.get("cpu_tuning") != "cortex-a57":
+        raise RuntimeError("Release ARM64 objects required; rebuild without --reuse-objects")
     if report["syntax_only"] or not report["controlled_crash_adapter"]:
         raise RuntimeError("A services object audit is required")
     if args.media_headers and report.get("media_headers") != str(args.media_headers.resolve()):
         raise RuntimeError("Engine objects do not use the requested Switch FFmpeg headers")
     objects = []
     for entry in report["results"]:
+        optimization=[option for option in entry["command"] if re.fullmatch(r"-O(?:[0-3sgz]|fast)",option)]
+        if optimization != ["-O2"] or "-mtune=cortex-a57" not in entry["command"]:
+            raise RuntimeError("Non-release object command: " + entry["source"])
         for dependency in entry.get("dependencies", []):
             if hashlib.sha256((ROOT / dependency["path"]).read_bytes()).hexdigest() != dependency["sha256"]:
                 raise RuntimeError("Stale source dependency: " + dependency["path"])
@@ -59,7 +64,7 @@ def main():
                  "port/switch/platform/asset_verify.c"]:
         source = ROOT / path
         obj = out / (source.stem + ".o")
-        command = [str(cc), *arch, "-funwind-tables", "-D__SWITCH__", "-I" + str(sdk / "libnx/include"),
+        command = [str(cc), *arch, "-O2", "-funwind-tables", "-D__SWITCH__", "-I" + str(sdk / "libnx/include"),
             "-I" + str(ROOT / "port/switch"), "-c", str(source), "-o", str(obj)]
         commands.append(command)
         subprocess.run(command, env=env, check=True)
@@ -100,6 +105,7 @@ def main():
         if "cpptrace" in symbol: return "cpptrace"
         return "other (inspect exact symbols)"
     result = dict(all_source_objects=report["passed"] == report["total"],
+        optimization=report["optimization"],cpu_tuning=report["cpu_tuning"],
         compiled=report["passed"], total=report["total"], linked=process.returncode == 0,
         link_exit_code=process.returncode, undefined_symbols=missing,
         multiple_definitions=duplicates,

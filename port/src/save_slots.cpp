@@ -35,6 +35,9 @@
 #include "platform/paths.hpp"
 #include "save_slots.hpp"
 #include "userdata.hpp"
+#ifdef __SWITCH__
+#include "data/files.hpp"
+#endif
 
 namespace fs = std::filesystem;
 
@@ -556,6 +559,9 @@ SaveSlotState ReadDocument(const fs::path &path, SaveDocument &document) {
 } // namespace
 
 SaveSlotState SaveSlotRead(const fs::path &path, SaveDocument &document) {
+#ifdef __SWITCH__
+    if (!CtSwitchFilesRecover(path)) return SaveSlotState::Unreadable;
+#endif
     const SaveSlotState state = ReadDocument(path, document);
     CT_LOG_DEBUG(Save, "save slots: read {}: {}", PathsDisplay(path),
                  state == SaveSlotState::Ready ? "ready" : SaveSlotStatus(state));
@@ -564,6 +570,13 @@ SaveSlotState SaveSlotRead(const fs::path &path, SaveDocument &document) {
 
 SaveSlotList SaveSlotScan(bool include_autosave) {
     SaveSlotList                             list;
+#ifdef __SWITCH__
+    if (!CtSwitchFilesRecoverDirectory(SaveSlotsRoot())) {
+        list.read_failed = true;
+        list.first_free = -1;
+        return list;
+    }
+#endif
     std::map<std::pair<int, bool>, fs::path> entries;
     std::vector<LegacySave>                  legacy;
     std::vector<fs::path>                    paths;

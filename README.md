@@ -30,8 +30,10 @@ its support files and prepared game data are uploaded and fully checksum-verifie
 Game preview 0.7.0 passes on-device archive verification and script timing checks,
 then exposes an NVK shared-memory selection issue. The Switch adapter fixes that
 selection; renderer probe 0.6.1 now passes all four GPU pixel checks on hardware.
-Game preview 0.7.1 is uploaded and verified. Reaching its title/game screen is
-still the goal's next gate.
+The user has booted and played the real game. The [gameplay checkpoint](docs/SWITCH_GAMEPLAY.md)
+records the release-optimized 0.7.3 build, working save report, 30 FPS target,
+and ongoing audio/loading-screen work. Stock performance and grainy audio still
+need improvement and measurement.
 
 See [the Switch work plan](docs/PC_TO_SWITCH.md) for scope and milestones.
 The original documentation follows.

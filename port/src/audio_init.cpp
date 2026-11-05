@@ -4,6 +4,10 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
+#ifdef __SWITCH__
+#include <atomic>
+#include <chrono>
+#endif
 
 #include "audio/mixer.hpp"
 #include "log/log.hpp"
@@ -20,6 +24,21 @@ double       g_span_fraction = 0.0;
 double       g_tick_rate = 0.0;
 std::int64_t g_span_start = 0;
 std::int64_t g_span_frames = 0;
+#ifdef __SWITCH__
+std::atomic<std::uint64_t> g_audio_calls{0},g_audio_us{0},g_audio_peak_us{0},g_audio_over_budget{0};
+void ReportAudioTiming() {
+    using Clock=std::chrono::steady_clock;
+    static auto previous=Clock::now();
+    const auto now=Clock::now();
+    if(now-previous<std::chrono::seconds(5))return;
+    previous=now;
+    const auto calls=g_audio_calls.exchange(0,std::memory_order_relaxed);
+    const auto elapsed=g_audio_us.exchange(0,std::memory_order_relaxed);
+    const auto peak=g_audio_peak_us.exchange(0,std::memory_order_relaxed);
+    const auto late=g_audio_over_budget.exchange(0,std::memory_order_relaxed);
+    if(calls)CT_LOG_INFO(Audio,"mix callbacks {}, mean {} us, max {} us, over budget {}",calls,elapsed/calls,peak,late);
+}
+#endif
 
 void RenderTicks() {
     const auto   tick = ClockTickCount();
@@ -53,7 +72,21 @@ void RenderMixer(void *user, float *out, int frames) {
     static_cast<void>(log_ready);
     // Mixer::Render takes the mixer's own lock, and every game-thread setter takes it too, so the
     // device thread needs no lock of its own here.
-    static_cast<audio::Mixer *>(user)->Render(out, frames);
+#ifdef __SWITCH__
+    const auto started=std::chrono::steady_clock::now();
+#endif
+    auto *mixer=static_cast<audio::Mixer *>(user);
+    mixer->Render(out, frames);
+#ifdef __SWITCH__
+    const auto micros=static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::steady_clock::now()-started).count());
+    g_audio_calls.fetch_add(1,std::memory_order_relaxed);
+    g_audio_us.fetch_add(micros,std::memory_order_relaxed);
+    auto peak=g_audio_peak_us.load(std::memory_order_relaxed);
+    while(peak<micros && !g_audio_peak_us.compare_exchange_weak(peak,micros,std::memory_order_relaxed)){}
+    if(micros>static_cast<std::uint64_t>(frames)*1000000/mixer->Rate())
+        g_audio_over_budget.fetch_add(1,std::memory_order_relaxed);
+#endif
 }
 
 // AudioOutputStart returns false for "off" and for a failed device alike, so "off" is recognised
@@ -94,10 +127,17 @@ bool AudioInit(bool headless) {
         return true;
     }
     audio::Mixer &mixer = audio::DefaultMixer();
-    return AudioOutputStart(mixer.Rate(), RenderMixer, &mixer);
+    const bool started=AudioOutputStart(mixer.Rate(), RenderMixer, &mixer);
+#ifdef __SWITCH__
+    if(started)ClockAddPumpHook(ReportAudioTiming);
+#endif
+    return started;
 }
 
 void AudioShutdown() {
+#ifdef __SWITCH__
+    ClockRemovePumpHook(ReportAudioTiming);
+#endif
     ClockRemovePumpHook(RenderTicks);
     g_tick_audio = false;
     g_fraction = 0.0;

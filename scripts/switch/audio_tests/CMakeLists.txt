@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.25)
+project(chronicletwo_audio_tests LANGUAGES CXX)
+add_executable(switch_audio_tests main.cpp)
+target_compile_features(switch_audio_tests PRIVATE cxx_std_17)
+target_include_directories(switch_audio_tests PRIVATE include)
+enable_testing()
+add_test(NAME switch_audio_callbacks COMMAND switch_audio_tests)

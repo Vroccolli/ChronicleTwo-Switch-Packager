@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+void ctSwitchLoadingStage(const char *stage);
 
 // The host supplies the digest of its already verified, immutable archive.
 // Verify the SD bytes locally before the game reads any of them, avoiding a
@@ -14,8 +15,8 @@ int ctSwitchVerifyGameArchive(void) {
     FILE *expected=fopen("/switch/ChronicleTwo-PC-Switch/game/archive.sha256","rb");
     if (!expected) {
         if (errno==ENOENT) {
-            puts("No archive.sha256 supplied; archive transfer verification unavailable");
-            return 0;
+            fputs("Archive verification requested, but archive.sha256 is missing\n",stderr);
+            return -1;
         }
         perror("Cannot open archive.sha256");
         return -1;
@@ -49,6 +50,9 @@ int ctSwitchVerifyGameArchive(void) {
     while ((count=fread(buffer,1,256*1024,archive))!=0) {
         sha256ContextUpdate(&hash,buffer,count); bytes+=count;
         if (bytes>=next_progress) {
+            char stage[80];
+            snprintf(stage,sizeof(stage),"Verifying game data (%u%%)",(unsigned)(bytes*100/wanted_size));
+            ctSwitchLoadingStage(stage);
             printf("Archive checksum: %" PRIu64 "/%llu bytes\n",bytes,wanted_size);
             next_progress+=256*1024*1024;
         }

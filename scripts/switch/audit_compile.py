@@ -113,7 +113,7 @@ def main():
               "-fsigned-char", "-ffp-contract=off", "-fno-strict-aliasing", "-fwrapv", "-fmax-errors=3", "-w",
               "-I" + str(sdk / "libnx/include"), "-I" + str(sdk / "portlibs/switch/include")]
     if args.objects:
-        common += ["-fPIE", "-ffunction-sections", "-fdata-sections", "-funwind-tables"]
+        common += ["-O2", "-mtune=cortex-a57", "-fPIE", "-ffunction-sections", "-fdata-sections", "-funwind-tables"]
     if args.runtime:
         common += ["-I" + str(ROOT / "port/switch")]
 
@@ -127,6 +127,8 @@ def main():
         elif args.runtime and source == ROOT / "tools/kazarov/src/cpp/sce/eekernel_threads.cpp":
             source = scheduler
         if args.services:
+            if source == ROOT / "tools/kazarov/src/cpp/platform/files.cpp":
+                source = ROOT / "port/switch/data/files.cpp"
             if source == ROOT / "tools/kazarov/src/cpp/gfx/memory.cpp":
                 source = prepare_memory(output / "generated/gfx")
             crash_adapters = {"crash.cpp": "crash.cpp", "crash_report.cpp": "report.cpp", "crash_symbols.cpp": "symbols.cpp"}
@@ -164,6 +166,11 @@ def main():
             for dependency in (original, ROOT / "port/switch/gfx/memory_policy.hpp"):
                 dependencies.append(dict(path=dependency.relative_to(ROOT).as_posix(),
                     sha256=hashlib.sha256(dependency.read_bytes()).hexdigest()))
+        if args.services and original in (ROOT / "tools/kazarov/src/cpp/platform/files.cpp",
+                ROOT / "port/src/platform/config.cpp", ROOT / "port/src/save_slots.cpp"):
+            for dependency in (ROOT / "port/switch/data/files.hpp", ROOT / "tools/kazarov/include/platform/files.hpp"):
+                dependencies.append(dict(path=dependency.relative_to(ROOT).as_posix(),
+                    sha256=hashlib.sha256(dependency.read_bytes()).hexdigest()))
         return dict(family=family, source=relative, source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
                     dependencies=dependencies,
                     original_source=original.relative_to(ROOT).as_posix(), runtime_adapter=source != original,
@@ -177,6 +184,8 @@ def main():
             if len(results) % 25 == 0 or len(results) == len(selected):
                 print(f"  {len(results)}/{len(selected)} checked; {sum(r['exit_code'] == 0 for r in results)} passed", flush=True)
     report = dict(compiler=version, pc_database=str(database), syntax_only=not args.objects,
+                  optimization="-O2" if args.objects else None,
+                  cpu_tuning="cortex-a57" if args.objects else None,
                   runtime_adapters=args.runtime,
                   linkage_adapter=args.linkage,
                   controlled_crash_adapter=args.services,

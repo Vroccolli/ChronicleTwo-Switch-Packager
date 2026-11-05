@@ -41,6 +41,9 @@
 int VSyncCallBack(int field);
 #ifdef __SWITCH__
 extern "C" void ctSwitchBootstrap();
+extern "C" int ctSwitchVerifyGameArchive();
+extern "C" void ctSwitchLoadingStage(const char *stage);
+extern "C" void ctSwitchLoadingFinished();
 #endif
 
 namespace {
@@ -359,10 +362,16 @@ int Run(int argc, const char **argv) {
         CrashTestArm(*crash_test, CrashTestWhen::Early);
     }
     FirstRunRequireData(PathsDataRoot(), options.headless);
+#ifdef __SWITCH__
+    ctSwitchLoadingStage("Loading game data");
+#endif
     InitCDFile();
     if (!options.headless) {
         GameSetDataIcon();
     }
+#ifdef __SWITCH__
+    ctSwitchLoadingStage("Preparing scripts");
+#endif
     if (!DataReadPrepareScriptTiming(options.headless)) {
         return kExitScriptTiming;
     }
@@ -372,6 +381,11 @@ int Run(int argc, const char **argv) {
     DisplaySetOverrides(options.window_width, options.window_height, options.headless);
     WindowConfig window = DisplayWindowConfig(settings);
     window.vulkan = !offscreen;
+#ifdef __SWITCH__
+    ctSwitchLoadingStage("Starting graphics");
+    // Release the console's native window before SDL/Vulkan takes ownership.
+    ctSwitchLoadingFinished();
+#endif
     WindowInit(window);
     if (!options.headless) {
         CrashShowLastReportNotice();
@@ -425,6 +439,9 @@ int Run(int argc, const char **argv) {
         CrashTestArm(*crash_test, CrashTestWhen::FirstFrame);
     }
     CT_PROFILE_THREAD("Game / host");
+#ifdef __SWITCH__
+    ctSwitchLoadingStage("Starting game");
+#endif
     MainLoop();
 
     ClockRemovePumpHook(PumpHost);
@@ -452,7 +469,21 @@ PORT_OVERRIDE int main(int argc, const char **argv) {
     args.push_back(executable.c_str());
     args.push_back("--run-dir");
     args.push_back("/switch/ChronicleTwo-PC-Switch/game");
-    for (int i=1;i<argc;++i) args.push_back(argv[i]);
+    args.push_back("--log-fps");
+    bool verify_assets=false;
+    for (int i=1;i<argc;++i) {
+        if (std::string_view(argv[i])=="--verify-assets") verify_assets=true;
+        else args.push_back(argv[i]);
+    }
+    if (verify_assets) {
+        ctSwitchLoadingStage("Verifying game data");
+        if (ctSwitchVerifyGameArchive()!=0) {
+            std::fputs("Game archive verification failed; refusing to enter the game\n",stderr);
+            return EXIT_FAILURE;
+        }
+    } else {
+        std::puts("Full archive checksum not requested; use --verify-assets to run it");
+    }
     const auto count=static_cast<int>(args.size());
     args.push_back(nullptr);
     return Run(count,args.data());

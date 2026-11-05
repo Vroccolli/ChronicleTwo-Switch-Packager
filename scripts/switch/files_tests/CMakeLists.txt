@@ -1,0 +1,12 @@
+cmake_minimum_required(VERSION 3.25)
+project(switch_files_checks LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 26)
+get_filename_component(CT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../.." ABSOLUTE)
+add_executable(switch_files_check main.cpp "${CT_ROOT}/port/switch/data/files.cpp")
+target_compile_definitions(switch_files_check PRIVATE CT_SWITCH_FILES_TESTING)
+target_include_directories(switch_files_check PRIVATE "${CT_ROOT}/port/switch" "${CT_ROOT}/tools/kazarov/include")
+enable_testing()
+add_test(NAME SwitchFiles.PublicationAndRecovery COMMAND switch_files_check)
+get_filename_component(CT_COMPILER_BIN "${CMAKE_CXX_COMPILER}" DIRECTORY)
+set_tests_properties(SwitchFiles.PublicationAndRecovery PROPERTIES TIMEOUT 30
+    ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:${CT_COMPILER_BIN}")

@@ -21,6 +21,9 @@
 #include "platform/display.hpp"
 #include "platform/files.hpp"
 #include "platform/paths.hpp"
+#ifdef __SWITCH__
+#include "data/files.hpp"
+#endif
 
 namespace {
 
@@ -458,6 +461,9 @@ void MergeChanges(Json &root, const Json &before, const Json &after, const std::
 }
 
 bool WriteReplacing(const std::filesystem::path &path, std::string_view text) {
+#ifdef __SWITCH__
+    return FilesWrite(path, text.data(), text.size(), true) == FilesResult::kWritten;
+#else
     std::filesystem::path temp = path;
     temp += ".tmp";
     std::error_code error;
@@ -476,6 +482,7 @@ bool WriteReplacing(const std::filesystem::path &path, std::string_view text) {
         return false;
     }
     return true;
+#endif
 }
 
 } // namespace
@@ -576,6 +583,9 @@ bool ConfigSave() {
         return false;
     }
     const std::filesystem::path path = (PathsSaveRoot() / ".." / "config.json").lexically_normal();
+#ifdef __SWITCH__
+    if (!CtSwitchFilesRecover(path)) return g_saved = false;
+#endif
     std::error_code             error;
     std::filesystem::create_directories(path.parent_path(), error);
     Json root = Json::object();
@@ -630,6 +640,16 @@ bool ConfigSave() {
 
 bool ConfigLoad() {
     const std::filesystem::path        path = (PathsSaveRoot() / ".." / "config.json").lexically_normal();
+#ifdef __SWITCH__
+    if (!CtSwitchFilesRecover(path)) {
+        CT_LOG_ERROR(Config, "config: could not recover pending publication {}; leaving it untouched", PathsDisplay(path));
+        g_config = Config{};
+        g_saved = false;
+        g_keep_file = true;
+        g_persisted.reset();
+        return false;
+    }
+#endif
     std::error_code                    error;
     const std::filesystem::file_status status = std::filesystem::status(path, error);
     g_keep_file = false;

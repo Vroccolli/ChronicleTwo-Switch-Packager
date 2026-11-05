@@ -8,8 +8,11 @@ are independently verified too. The Mesa/NVK capability/command probe passes
 on hardware. Game 0.7.0 passes its full on-device archive hash, indexes 87,996
 files and validates 1,398 scripts, then stops on GPU memory selection. Renderer
 probe 0.6.1 fixes that selection and passes all four pixel checks on hardware.
-Game preview 0.7.1 is uploaded and verified; its title/game boot is pending.
-The goal remains active.
+The user has booted through the actual game menus, intro and gameplay. Preview
+0.7.3 is release-optimized and the user reports saving works and 30 FPS with
+their overclock. See [the gameplay/performance checkpoint](SWITCH_GAMEPLAY.md)
+for evidence and remaining stock-performance, audio and loading-screen work.
+The goal remains active for that requested follow-up work.
 
 ## Earlier bring-up checkpoints
 
