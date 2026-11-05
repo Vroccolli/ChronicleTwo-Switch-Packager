@@ -4,7 +4,7 @@ size_t __nx_heap_size = 0;
 static PadState pad;
 void ctRendererProbeStart(void) {
     consoleInit(NULL);
-    printf("ChronicleTwo real renderer probe 0.6.0\nPreparing SDL and Vulkan...\n");
+    printf("ChronicleTwo real renderer probe 0.6.1\nPreparing SDL and Vulkan...\n");
     consoleUpdate(NULL);
     padConfigureInput(1,HidNpadStyleSet_NpadStandard);
     padInitializeDefault(&pad);

@@ -216,3 +216,49 @@ blank during these stages. Startup output is saved in the dedicated
 to `game/asset-verification.json`. A visible title/game frame and matching logs
 are still needed to establish hardware boot. Renderer probe 0.6.0 remains
 available to isolate graphics failures. The goal remains active.
+
+### Shared GPU memory fix and hardware retest
+
+Game preview 0.7.0 was launched in full application mode (applet type 0).
+The libnx SD checksum passes over all 3,809,445,609 bytes, independently matching
+the host's raw digest. The engine indexes 87,996 visible files in 80.627 seconds
+and validates 1,398 script timings with zero mismatches in 30.229 seconds.
+Both that run and renderer probe 0.6.0 stop at the first image allocation with
+`no memory type with properties 0x1`. Symbolized game offsets identify
+`FindMemoryType -> AllocateMemory -> CreateImage -> InitResources`.
+Logs are preserved under `port/build/switch/hardware-pulls/20261105T083505Z`.
+
+The matching public [NVK 25.0.7 source](https://github.com/PalindromicBreadLoaf/nxvk/blob/switch-mesa-25.0.7/src/nouveau/vulkan/nvk_physical_device.c)
+marks Tegra's shared system-memory heap device-local but exposes its memory
+type as host-visible, coherent and cached (flags `0xe`), without the type's
+device-local bit. `prepare_gfx.py` makes a Switch-only copy of the allocator
+with a narrowly scoped selection policy. Strict selection still runs first.
+Only an integrated NVIDIA device asking solely for device-local memory may
+fall back to a compatible host-visible/coherent type on a device-local heap.
+The resource's `memoryTypeBits`, heap bounds, and CPU coherency requirements
+are retained. Driver flags are not rewritten. The pinned Kazarov source and
+the PC allocator remain unchanged.
+
+Eleven host policy checks pass, including rejection of incompatible masks,
+non-local heaps, invalid heap indices, missing coherency, other vendors and
+discrete devices. The real ARM64 adapter compiles, and the full 427-object
+game link passes. Reused objects are checked against the policy header and
+original allocator hashes as well as the generated source hash.
+
+Renderer probe 0.6.1 was uploaded and verified, and the user reports all PASS
+on the second test. Its saved frame and results independently confirm all four
+checks: clear/draw, RGBA texture upload/readback, indexed textures, and GS blend.
+Failure bits are zero. Hardware logs confirm type 0, flags `0xe`, heap 0 and
+compatible mask `0x1`; all 840 graphics pipelines initialize. Evidence is under
+`port/build/switch/renderer-probe/hardware/pass-0.6.1-20261105T085219Z`.
+The result text retains a stale 0.6.0 heading; stdout identifies 0.6.1 and its
+upload receipt identifies the tested binary. A cache-replacement warning on
+the second run is nonfatal and does not change the passing pixel results.
+
+Game preview 0.7.1 carries the same policy and accurate Switch/build labels.
+Its 44,886,213-byte NRO is uploaded and size/SHA-256 readback verified; receipt
+`port/build/switch/game/app-upload-verification-0.7.1.json` records digest
+`ca09318ea2b3dc0ea0bef0796094b0fb54ed349ac2d2fd63474a247a0d4cc06c`.
+The prior 0.7.0 ELF, NRO and build reports are retained under the ignored
+`port/build/switch/game/archive/0.7.0` for crash-symbol lookup. Game data did
+not need another upload. The actual 0.7.1 title/game screen remains unverified.

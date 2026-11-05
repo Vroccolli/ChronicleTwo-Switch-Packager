@@ -37,6 +37,9 @@ def main():
         raise RuntimeError("Engine objects do not use the requested Switch FFmpeg headers")
     objects = []
     for entry in report["results"]:
+        for dependency in entry.get("dependencies", []):
+            if hashlib.sha256((ROOT / dependency["path"]).read_bytes()).hexdigest() != dependency["sha256"]:
+                raise RuntimeError("Stale source dependency: " + dependency["path"])
         source = ROOT / entry["source"]
         if hashlib.sha256(source.read_bytes()).hexdigest() != entry["source_sha256"]:
             raise RuntimeError(f"Stale source: {source}")

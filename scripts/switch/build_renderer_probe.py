@@ -18,6 +18,9 @@ def main():
     for entry in report["results"]:
         name = entry["original_source"]
         if name.startswith("tools/kazarov/src/cpp/gfx/") or name == "tools/kazarov/src/cpp/platform/log.cpp":
+            for dependency in entry.get("dependencies", []):
+                if hashlib.sha256((ROOT / dependency["path"]).read_bytes()).hexdigest() != dependency["sha256"]:
+                    raise RuntimeError("Stale source dependency: " + dependency["path"])
             source = ROOT / entry["source"]
             if entry["exit_code"] or hashlib.sha256(source.read_bytes()).hexdigest() != entry["source_sha256"]:
                 raise RuntimeError(f"Stale/failed engine object: {name}")
@@ -48,7 +51,7 @@ def main():
         "-Wl,--gc-sections","-Wl,-Map,"+str(out/"probe.map"),"-o",elf,*objects,
         "-Wl,--start-group",sdl_library,library,"-lEGL","-lGLESv2","-lglapi","-ldrm_nouveau","-lz","-lzstd","-lnx","-lm","-Wl,--end-group"])
     nacp=out/"probe.nacp"; nro=out/"chronicletwo-renderer-probe.nro"
-    run([sdk/"tools/bin/nacptool.exe","--create","ChronicleTwo real renderer probe","ChronicleTwo contributors","0.6.0",nacp])
+    run([sdk/"tools/bin/nacptool.exe","--create","ChronicleTwo real renderer probe","ChronicleTwo contributors","0.6.1",nacp])
     run([sdk/"tools/bin/elf2nro.exe",elf,nro,"--nacp="+str(nacp),"--icon="+str(sdk/"libnx/default_icon.jpg")])
     (out/"build.json").write_text(json.dumps(dict(sources=sources,commands=commands,
         objects=[dict(path=str(p),sha256=hashlib.sha256(p.read_bytes()).hexdigest()) for p in objects],

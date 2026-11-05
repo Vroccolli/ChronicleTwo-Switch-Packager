@@ -14,6 +14,7 @@ import shlex
 import subprocess
 from prepare_runtime import prepare_scheduler
 from prepare_sources import prepare_source
+from prepare_gfx import prepare_memory
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -126,6 +127,8 @@ def main():
         elif args.runtime and source == ROOT / "tools/kazarov/src/cpp/sce/eekernel_threads.cpp":
             source = scheduler
         if args.services:
+            if source == ROOT / "tools/kazarov/src/cpp/gfx/memory.cpp":
+                source = prepare_memory(output / "generated/gfx")
             crash_adapters = {"crash.cpp": "crash.cpp", "crash_report.cpp": "report.cpp", "crash_symbols.cpp": "symbols.cpp"}
             if source.parent == ROOT / "port/src/crash" and source.name in crash_adapters:
                 source = ROOT / "port/switch/crash" / crash_adapters[source.name]
@@ -156,7 +159,13 @@ def main():
         except subprocess.TimeoutExpired:
             code, diagnostic = 124, "compiler timeout after 90 seconds"
         (output / name).write_text(diagnostic, encoding="utf-8")
+        dependencies=[]
+        if args.services and original == ROOT / "tools/kazarov/src/cpp/gfx/memory.cpp":
+            for dependency in (original, ROOT / "port/switch/gfx/memory_policy.hpp"):
+                dependencies.append(dict(path=dependency.relative_to(ROOT).as_posix(),
+                    sha256=hashlib.sha256(dependency.read_bytes()).hexdigest()))
         return dict(family=family, source=relative, source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+                    dependencies=dependencies,
                     original_source=original.relative_to(ROOT).as_posix(), runtime_adapter=source != original,
                     exit_code=code, blocker=None if code == 0 else diagnose(diagnostic), log=name, command=command)
 

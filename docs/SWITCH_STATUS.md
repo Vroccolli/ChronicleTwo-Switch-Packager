@@ -5,7 +5,11 @@ all 427 ARM64 engine objects with zero undefined symbols or duplicate definition
 Native game preview 0.7.0 is uploaded with all 22 app/support files verified by
 size and SHA-256 readback. The complete prepared game archive and its metadata
 are independently verified too. The Mesa/NVK capability/command probe passes
-on hardware; the actual game launch is still unverified. The goal remains active.
+on hardware. Game 0.7.0 passes its full on-device archive hash, indexes 87,996
+files and validates 1,398 scripts, then stops on GPU memory selection. Renderer
+probe 0.6.1 fixes that selection and passes all four pixel checks on hardware.
+Game preview 0.7.1 is uploaded and verified; its title/game boot is pending.
+The goal remains active.
 
 ## Earlier bring-up checkpoints
 

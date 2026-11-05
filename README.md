@@ -27,8 +27,11 @@ The active [library/renderer integration](docs/SWITCH_INTEGRATION.md) clears the
 assertion collision and links all 427 ARM64 engine objects with native libraries.
 The Mesa/NVK capability probe passes on Switch. Native game preview 0.7.0,
 its support files and prepared game data are uploaded and fully checksum-verified.
-The real game has not yet been launched on hardware; that boot remains the goal's
-next gate. Renderer probe 0.6.0 is also available for targeted diagnosis.
+Game preview 0.7.0 passes on-device archive verification and script timing checks,
+then exposes an NVK shared-memory selection issue. The Switch adapter fixes that
+selection; renderer probe 0.6.1 now passes all four GPU pixel checks on hardware.
+Game preview 0.7.1 is uploaded and verified. Reaching its title/game screen is
+still the goal's next gate.
 
 See [the Switch work plan](docs/PC_TO_SWITCH.md) for scope and milestones.
 The original documentation follows.

@@ -58,7 +58,7 @@ int main() {
     std::freopen((root/"stdout.log").c_str(),"wb",stdout);
     std::freopen((root/"stderr.log").c_str(),"wb",stderr);
     std::setvbuf(stdout,nullptr,_IONBF,0); std::setvbuf(stderr,nullptr,_IONBF,0);
-    std::puts("Renderer probe 0.6.0: initializing SDL3");
+    std::puts("Renderer probe 0.6.1: initializing SDL3");
     if (!SDL_Init(SDL_INIT_VIDEO|SDL_INIT_GAMEPAD)) { std::fprintf(stderr,"SDL_Init: %s\n",SDL_GetError()); return 1; }
     SDL_Window *window=SDL_CreateWindow("ChronicleTwo renderer probe",1280,720,SDL_WINDOW_VULKAN|SDL_WINDOW_FULLSCREEN);
     if (!window) { std::fprintf(stderr,"SDL_CreateWindow: %s\n",SDL_GetError()); return 1; }

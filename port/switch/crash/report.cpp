@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <string>
 #include <system_error>
+extern "C" const char *ctSwitchGameBuildId(void) __attribute__((weak));
 
 namespace {
 std::string directory, report;
@@ -27,7 +28,9 @@ bool WriterHasBundle() { return !report.empty(); }
 std::string_view WriterBundleDir() { return directory; }
 std::string_view WriterReportPath() { return report; }
 std::string_view PlatformName() { return "arm64-switch"; }
-std::string_view BuildId() { return "switch-services-0.4.1"; }
+std::string_view BuildId() {
+    return ctSwitchGameBuildId ? ctSwitchGameBuildId() : "switch-services-0.4.1";
+}
 void AppendRaw(std::string_view text) {
     std::fwrite(text.data(), 1, text.size(), stderr);
     if (active) std::fwrite(text.data(), 1, text.size(), active);

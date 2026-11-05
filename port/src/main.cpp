@@ -298,6 +298,8 @@ void LogSessionHeader() {
 #endif
 #ifdef _WIN32
     constexpr std::string_view os = "Windows";
+#elifdef __SWITCH__
+    constexpr std::string_view os = "Switch";
 #elifdef __APPLE__
     constexpr std::string_view os = "macOS";
 #else

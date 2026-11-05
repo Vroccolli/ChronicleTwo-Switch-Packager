@@ -9,10 +9,16 @@ target_include_directories(archive_check PRIVATE "${CT_ROOT}/port/switch" "C:/de
 set(CT_HOST_ZSTD_ARCHIVE "${CT_ROOT}/port/build/windows-x64-release/cargo/kazarov_54872/x86_64-pc-windows-gnullvm/release/libkazarov_core.a" CACHE FILEPATH "Native host zstd implementation")
 target_link_libraries(archive_check PRIVATE "${CT_HOST_ZSTD_ARCHIVE}")
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
+get_filename_component(CT_COMPILER_BIN "${CMAKE_CXX_COMPILER}" DIRECTORY)
 enable_testing()
+add_executable(memory_policy_check memory_policy_main.cpp)
+target_include_directories(memory_policy_check PRIVATE "${CT_ROOT}/port/switch"
+    "${CT_ROOT}/.kazarov/windows/deps/vulkan/Vulkan-Headers-vulkan-sdk-1.4.363.0/include")
+add_test(NAME SwitchMemory.SharedHeapPolicy COMMAND memory_policy_check)
+set_tests_properties(SwitchMemory.SharedHeapPolicy PROPERTIES
+    ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:${CT_COMPILER_BIN}")
 add_test(NAME SwitchArchive.CompatibilityAndCorruption COMMAND "${Python3_EXECUTABLE}"
     "${CMAKE_CURRENT_SOURCE_DIR}/verify.py" "$<TARGET_FILE:archive_check>" "${CMAKE_BINARY_DIR}/fixtures")
-get_filename_component(CT_COMPILER_BIN "${CMAKE_CXX_COMPILER}" DIRECTORY)
 set_tests_properties(SwitchArchive.CompatibilityAndCorruption PROPERTIES TIMEOUT 30
     ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:${CT_COMPILER_BIN}")
 add_executable(encoding_check encoding_main.cpp "${CT_ROOT}/port/switch/data/encoding.cpp")
