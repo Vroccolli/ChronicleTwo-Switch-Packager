@@ -163,8 +163,19 @@ All entry names, sizes and CRC metadata independently match Python's ZIP
 reader. The host harness permits the archive's real movies up to 179 MB while
 retaining a 256 MB per-entry allocation limit. The result is recorded in
 `port/build/switch-data-tests/full-game-archive-verification.json`.
-The archive and its existing metadata are transferring into the dedicated
-game folder. The preview now accepts a host-generated `game/archive.sha256`
+On 2026-11-05, the archive and its metadata completed upload into the dedicated
+game folder. A complete streamed readback verifies all 3,809,445,609 archive
+bytes against the raw SHA-256 above, and verifies the metadata too. Evidence
+is in `port/build/switch/game/asset-upload-verification.json`.
+
+The current FTP server's `SIZE` command overflows above 2 GiB: for this file
+it returns the malformed reply `213-485521687213 END`, which makes standard
+FTP reply parsing time out. Its directory listing reports the correct 64-bit
+size. Verification therefore checks that listing, the complete received byte
+count and the final SHA-256. The failed `SIZE` query did not indicate archive
+corruption; the full readback now passes.
+
+The preview accepts a host-generated `game/archive.sha256`
 containing the verified archive's byte count and raw SHA-256. Before entering
 the engine, it streams the entire SD file through libnx's hardware-accelerated
 SHA-256 and writes `game/asset-verification.json`, including actual/expected
@@ -172,11 +183,12 @@ bytes and hashes. A mismatch, incomplete archive or report-write failure
 refuses boot. With no sidecar, it explicitly reports that transfer verification
 is unavailable; that path supplies no checksum evidence.
 
-This permits on-device full-content verification after the upload completes,
-without requiring a second 3.8 GB transfer back over FTP. The native check
-builds and links, but its hardware result is pending. The host must validate
-the saved result against its own source digest before claiming transfer
-verification. Small app files still receive size and SHA-256 readback checks.
+This also permits future on-device full-content verification without a second
+3.8 GB transfer over FTP. The native check builds and links, but its hardware
+result is pending. When using that check instead of full FTP readback, the host
+must validate the saved result against its own source digest before claiming
+transfer verification. This deployment already has full FTP readback evidence.
+Small app files receive size and SHA-256 readback checks.
 Packaging includes the sidecar only when the recorded PC source remains
 unchanged and its original verifier passed. Existing saves and the prototype
 remain outside this staging workflow. Retail data and generated outputs stay
@@ -184,5 +196,23 @@ out of Git.
 
 Reproduce the complete native build with
 `python scripts/switch/build_game.py --jobs 4`, or the `switch_game` host CMake
-target after preparing the PC tree. A 0.6.0 renderer hardware result and a
-0.7.0 game boot still remain to be verified. The goal remains active.
+target after preparing the PC tree.
+
+### Verified preview deployment: 2026-11-05
+
+The automatic follow-up deployed `chronicletwo-switch.nro` 0.7.0 and all 21
+support files after the full data readback passed. Every one of the 22 files
+matches its inspected staged size and SHA-256, including the checksum sidecar
+and all ten controller/keyboard glyph files. The NRO is 44,882,117 bytes with
+SHA-256 `790f54ccf09cc471340f3d48d11e9657594b83140f0ba1f851b8764468b724ec`.
+Receipt: `port/build/switch/game/app-upload-verification-0.7.0.json`.
+
+Fully close the earlier probe and launch **ChronicleTwo native Switch preview**
+0.7.0 in the same full-application mode used for the passing Vulkan probe.
+Startup first checks the archive on SD, then enters the original engine,
+indexes assets and creates its graphics pipelines. The initial screen may stay
+blank during these stages. Startup output is saved in the dedicated
+`game/stdout.log` and `game/stderr.log`; the on-device archive hash result goes
+to `game/asset-verification.json`. A visible title/game frame and matching logs
+are still needed to establish hardware boot. Renderer probe 0.6.0 remains
+available to isolate graphics failures. The goal remains active.

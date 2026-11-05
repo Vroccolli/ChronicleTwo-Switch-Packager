@@ -1,10 +1,19 @@
-# Switch bring-up: 2026-11-04
+# Switch bring-up: 2026-11-05
+
+The [full integration checkpoint](SWITCH_INTEGRATION.md) now builds and links
+all 427 ARM64 engine objects with zero undefined symbols or duplicate definitions.
+Native game preview 0.7.0 is uploaded with all 22 app/support files verified by
+size and SHA-256 readback. The complete prepared game archive and its metadata
+are independently verified too. The Mesa/NVK capability/command probe passes
+on hardware; the actual game launch is still unverified. The goal remains active.
+
+## Earlier bring-up checkpoints
 
 Core math and [logging diagnostic NROs](SWITCH_LOGGING.md) build. Logging now
 has a real Switch backend; its updated audit is 387/424 and focused host
 checks pass 30/30. The 0.2.1 logging/math probe was deployed and passed its
-bounded hardware checks, verified from the screenshot and saved log. The full
-game engine does not yet build or run on Switch.
+bounded hardware checks, verified from the screenshot and saved log. At that
+checkpoint the full game engine did not yet build or run on Switch.
 
 The [runtime checkpoint](SWITCH_RUNTIME.md) adds arena memory and ARM64
 cooperative contexts, with 28/28 host checks passing. The adapted syntax audit
@@ -14,7 +23,7 @@ with zero ABI, stack and floating-point errors; logging and math also pass.
 
 The [GCC/services checkpoint](SWITCH_SERVICES.md) now clears those compilation
 blockers, passing 426/426 syntax and object checks with explicit adapters.
-The real engine link reports 299 unresolved names across graphics, SDL3,
+The first real engine link reported 299 unresolved names across graphics, SDL3,
 movie/script/data libraries and smaller dependencies, plus a newlib/game
 `__assert` collision. Probe 0.4.0 passed persistence/redaction but failed its
 module-offset check; the corrected 0.4.1 passes, verified from its new log/report

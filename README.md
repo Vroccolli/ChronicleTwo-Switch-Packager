@@ -20,13 +20,15 @@ and buildable core-math and [logging diagnostic NROs](docs/SWITCH_LOGGING.md).
 The logging backend passes focused host checks and its 0.2.1 SD-card hardware test.
 The [memory and cooperative thread adapters](docs/SWITCH_RUNTIME.md) pass 28 host
 checks. Their 0.3.0 runtime diagnostic passes all bounded checks on Switch hardware.
-The [GCC/services checkpoint](docs/SWITCH_SERVICES.md) compiles all 426 audited
-units into ARM64 objects. Engine linking now exposes concrete library gaps.
+The [GCC/services checkpoint](docs/SWITCH_SERVICES.md) compiled all 426 audited
+units into ARM64 objects and identified the remaining library gaps.
 Services probe 0.4.1 passes its bounded hardware retest, verified from its log/report.
 The active [library/renderer integration](docs/SWITCH_INTEGRATION.md) clears the
-assertion collision and builds native libraries. The Mesa/NVK capability probe
-passes on Switch; real renderer probe 0.6.0 is uploaded for hardware validation.
-A full Switch game build and full-game hardware execution are not yet established.
+assertion collision and links all 427 ARM64 engine objects with native libraries.
+The Mesa/NVK capability probe passes on Switch. Native game preview 0.7.0,
+its support files and prepared game data are uploaded and fully checksum-verified.
+The real game has not yet been launched on hardware; that boot remains the goal's
+next gate. Renderer probe 0.6.0 is also available for targeted diagnosis.
 
 See [the Switch work plan](docs/PC_TO_SWITCH.md) for scope and milestones.
 The original documentation follows.
