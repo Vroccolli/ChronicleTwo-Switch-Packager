@@ -118,3 +118,19 @@ overlay was built and transfer-verified; its console appearance remains pending.
   the fresh-source runner deliberately does not use it.
 - A download URL is unavailable: the build stops. Network access to upstream
   dependency hosts is required on the first build; caches are not committed.
+
+## Recorded fresh-checkout validation (2026-11-06)
+
+The source runner completed in a separate checkout of source checkpoint
+`5c9368d2`, with a separately checked-out pinned Kazarov revision. It started
+without a PC compilation database, generated game sources or compiled engine
+objects. Cached toolchain downloads and the installed SDK were reused; Switch
+dependency archives were unpacked into the new checkout. The PC game/extractor,
+all 427 ARM64 engine units, complete native link and offline Windows packager ZIP
+built successfully. The link reported zero unresolved or duplicate symbols and
+the checkout's tracked files remained unchanged. No retail ISO was used.
+
+That full build exercised engine 0.9.0. The subsequent 0.9.1 update changes the
+launcher icon, attribution and version metadata; its separate full-engine link
+and NRO metadata verification are recorded in `docs/SWITCH_GAMEPLAY.md`. These
+build checks do not establish gameplay execution on a console.

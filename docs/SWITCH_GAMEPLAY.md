@@ -513,3 +513,23 @@ restored FTP, the NRO-only upload completed and its remote size and full SHA-256
 readback matched the staged 0.9.0 build. Receipt:
 `port/build/switch/game/app-upload-verification-0.9.0.json`.
 The bottom-right overlay's appearance awaits the user's console test.
+
+
+## Preview 0.9.1: moon icon and author attribution
+
+The user's supplied 256x256 moon artwork is retained as
+`port/assets/icon/switch-moons.png`. A same-size RGB JPEG on a black matte is
+embedded as the Switch launcher icon; the original pixel layout is preserved.
+Package metadata now credits `The MoonPeople and ChronicleTwo contributors`.
+NACP, loading screen and runtime build identifier all report 0.9.1.
+
+The complete 427-object engine links successfully. Direct inspection of the
+packaged NRO asset section verifies the embedded JPEG matches the source icon,
+the embedded NACP matches the generated metadata, and its author and version
+fields contain the requested values. Receipt:
+`port/build/switch/game/metadata-verification-0.9.1.json`.
+NRO size: 39,901,280 bytes; SHA-256:
+`155f2d86814c71ed305943ad243f4cff73408b4b0941ea966f063318de0187d2`.
+
+The NRO-only upload completed and remote size/full SHA-256 readback matches.
+Receipt: `port/build/switch/game/app-upload-verification-0.9.1.json`.

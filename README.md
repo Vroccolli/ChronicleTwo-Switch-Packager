@@ -16,7 +16,7 @@ python scripts/switch/build_from_source.py --jobs 2 --packager
 
 Install the prerequisites in the guide first. The source build does not require
 or include a retail ISO; users supply a supported PAL ISO to the resulting app.
-The current engine version is **0.9.0 preview**, approaching beta. Build/link and
+The current engine version is **0.9.1 preview**, approaching beta. Build/link and
 asset verification are separate from console gameplay testing.
 
 Separate development repository for cross-compiling ChronicleTwo's native PC
