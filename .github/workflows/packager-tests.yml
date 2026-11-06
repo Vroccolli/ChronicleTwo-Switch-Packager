@@ -1,0 +1,16 @@
+name: Offline packager checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Test installation workflow without retail data
+        run: python -m unittest discover -s scripts/packager -p test_packager.py -v
+      - name: Check source-runner command line
+        run: python scripts/switch/build_from_source.py --help

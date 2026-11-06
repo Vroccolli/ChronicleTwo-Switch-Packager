@@ -14,7 +14,8 @@ import shlex
 import subprocess
 from prepare_runtime import prepare_scheduler
 from prepare_sources import prepare_source
-from prepare_gfx import prepare_memory, prepare_displaylist
+from prepare_gfx import prepare_memory, prepare_displaylist, prepare_overlay
+from toolchain import sdk_root
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -67,7 +68,7 @@ def diagnose(text):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--pc-build", type=Path, default=ROOT / "port/build/windows-x64-release")
-    parser.add_argument("--devkitpro", type=Path, default=Path("C:/devkitPro"))
+    parser.add_argument("--devkitpro", type=Path, default=sdk_root())
     parser.add_argument("--output", type=Path, default=ROOT / "port/build/switch-audit")
     parser.add_argument("--jobs", type=int, default=4)
     parser.add_argument("--match", default="", help="optional source-path substring")
@@ -133,6 +134,8 @@ def main():
                 source = prepare_memory(output / "generated/gfx")
             elif source == ROOT / "tools/kazarov/src/cpp/gfx/displaylist.cpp":
                 source = prepare_displaylist(output / "generated/gfx")
+            elif source == ROOT / "tools/kazarov/src/cpp/platform/overlay.cpp":
+                source = prepare_overlay(output / "generated/platform")
             crash_adapters = {"crash.cpp": "crash.cpp", "crash_report.cpp": "report.cpp", "crash_symbols.cpp": "symbols.cpp"}
             if source.parent == ROOT / "port/src/crash" and source.name in crash_adapters:
                 source = ROOT / "port/switch/crash" / crash_adapters[source.name]
@@ -176,6 +179,10 @@ def main():
             if original == ROOT / "tools/kazarov/src/cpp/gfx/displaylist.cpp":
                 dependencies.append(dict(path=original.relative_to(ROOT).as_posix(),
                     sha256=hashlib.sha256(original.read_bytes()).hexdigest()))
+        if args.services and original == ROOT / "tools/kazarov/src/cpp/platform/overlay.cpp":
+            for dependency in (original, ROOT / "scripts/switch/prepare_gfx.py", ROOT / "tools/kazarov/include/platform/overlay_font.inc"):
+                dependencies.append(dict(path=dependency.relative_to(ROOT).as_posix(),
+                    sha256=hashlib.sha256(dependency.read_bytes()).hexdigest()))
         if original == ROOT / "port/src/present.cpp":
             dependency = ROOT / "port/src/present_timing.hpp"
             dependencies.append(dict(path=dependency.relative_to(ROOT).as_posix(),

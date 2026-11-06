@@ -1,5 +1,24 @@
 # ChronicleTwo PC-to-Switch
 
+## Build the complete project from source
+
+This `switch-engine` branch contains the recovered game source, Switch platform
+adapters, source generators, dependency recipes and offline Windows packager.
+Start with [the fresh-checkout build guide](docs/BUILD_SWITCH.md). The repository's
+`main` branch contains the standalone packager; it is not the complete engine.
+
+```powershell
+git clone --branch switch-engine --recurse-submodules https://github.com/Vroccolli/ChronicleTwo-Switch-Packager.git
+cd ChronicleTwo-Switch-Packager
+python scripts/switch/build_from_source.py --check
+python scripts/switch/build_from_source.py --jobs 2 --packager
+```
+
+Install the prerequisites in the guide first. The source build does not require
+or include a retail ISO; users supply a supported PAL ISO to the resulting app.
+The current engine version is **0.9.0 preview**, approaching beta. Build/link and
+asset verification are separate from console gameplay testing.
+
 Separate development repository for cross-compiling ChronicleTwo's native PC
 engine for Nintendo Switch. The goal is to run the recovered game code and
 existing native game loop on Switch, adapting the platform services and renderer.
@@ -39,6 +58,9 @@ stalls. The user confirms the spectrumised-item crash fix works on 0.7.8;
 Heavy-scene performance and presentation pacing remain under investigation.
 
 See [the Switch work plan](docs/PC_TO_SWITCH.md) for scope and milestones.
+The [offline Windows ISO packager](docs/SWITCH_PACKAGER.md) prepares an SD-card
+folder from the supported PAL disc using a bundled native Switch executable,
+without requiring users to install Python or compilers.
 The original documentation follows.
 
 # Chronicle Two

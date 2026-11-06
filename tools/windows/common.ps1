@@ -15,6 +15,14 @@ function Resolve-WindowsBuild([string]$Root, [string]$BuildDirectory) {
 }
 
 function Find-WindowsTool([string]$Name, [string]$Fallback) {
+    $overrideName = switch ($Name) { 'cmake' { 'CT_CMAKE' }; '7z' { 'CT_7ZIP' }; default { $null } }
+    if ($overrideName) {
+        $override = [Environment]::GetEnvironmentVariable($overrideName)
+        if ($override) {
+            if (!(Test-Path -LiteralPath $override -PathType Leaf)) { throw "Invalid ${overrideName}: $override" }
+            return $override
+        }
+    }
     $command = Get-Command $Name -ErrorAction SilentlyContinue
     if ($command) { return $command.Source }
     if (Test-Path -LiteralPath $Fallback) { return $Fallback }
@@ -22,6 +30,10 @@ function Find-WindowsTool([string]$Name, [string]$Fallback) {
 }
 
 function Find-WindowsPython {
+    if ($env:CT_PYTHON) {
+        if (!(Test-Path -LiteralPath $env:CT_PYTHON -PathType Leaf)) { throw "Invalid CT_PYTHON: $env:CT_PYTHON" }
+        return $env:CT_PYTHON
+    }
     $command = Get-Command py -ErrorAction SilentlyContinue
     if ($command) {
         $python = & $command.Source -3 -c 'import sys; print(sys.executable)' 2>$null

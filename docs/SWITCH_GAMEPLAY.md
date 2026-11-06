@@ -489,3 +489,27 @@ The user supplied `https://github.com/Vroccolli/ChronicleTwo-Switch-Packager`
 as the publishing repository. Its `main` holds a standalone packager with an
 unrelated Git history, so engine work is published separately as `switch-engine`;
 no force push or replacement of the packager main branch is intended.
+
+
+## Preview 0.9.0: FPS-only bottom-right overlay
+
+The requested version jump updates the NACP package version, startup/loading
+screen, console header and runtime build identifier to 0.9.0. The Switch
+on-screen overlay now displays only `FPS xx.x`, with no tick or draw counts,
+at the bottom-right. A generated copy of the pinned overlay renderer measures
+its actual font advances and backdrop height before anchoring in target pixel
+coordinates with a small margin; the pinned source remains unchanged.
+The separate PC presentation layout and internal detailed logging are retained.
+
+The real Switch overlay/presentation objects compile and all 427 engine objects
+link with zero unresolved or duplicate symbols. PC game/test targets rebuild
+successfully (23.5 seconds). Package: 39,889,093 bytes, SHA-256
+`2cb90b3f451836a52fe0771962b8b2ef725cb27cdb3f369d274f762c1d026ee9`.
+The previous 0.7.13 package is archived. NRO-only staging is at
+`port/build/switch/game/update-0.9.0`.
+
+The initial deployment attempt timed out while FTP was offline. After the user
+restored FTP, the NRO-only upload completed and its remote size and full SHA-256
+readback matched the staged 0.9.0 build. Receipt:
+`port/build/switch/game/app-upload-verification-0.9.0.json`.
+The bottom-right overlay's appearance awaits the user's console test.

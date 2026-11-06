@@ -6,10 +6,11 @@ import os
 import subprocess
 from audit_compile import ROOT
 from prepare_vulkan_dispatch import prepare_dispatch
+from toolchain import sdk_root
 
 
 def main():
-    sdk=Path("C:/devkitPro")
+    sdk=sdk_root()
     out=ROOT/"port/build/switch-libraries"
     out.mkdir(parents=True,exist_ok=True)
     source=prepare_dispatch(out/"generated")

@@ -27,6 +27,7 @@
 #include "stubs/mglib.hpp"
 #ifdef __SWITCH__
 #include "gfx/frame_timing.hpp"
+void ctSwitchDrawFps(std::string_view text);
 #endif
 
 namespace {
@@ -89,6 +90,12 @@ bool PresentAsync() {
     return gfx::ActiveRenderThreadMode() == gfx::RenderThreadMode::Async;
 }
 
+std::string FpsOnlyText() {
+    char text[32];
+    std::snprintf(text, sizeof text, "FPS %.1f", PresentAsync() ? async_fps.load() : overlay.frames.PerSecond());
+    return text;
+}
+
 void PollFpsToggle() {
     if (InputHostPressed(InputHostAction::FpsToggle)) {
         overlay.on = !overlay.on;
@@ -102,9 +109,13 @@ gfx::DisplayListRef RecordHostOverlay(bool fps) {
         return nullptr;
     }
     if (fps) {
+#ifdef __SWITCH__
+        ctSwitchDrawFps(FpsOnlyText());
+#else
         const int pixel = OverlayPixelSize(gfx::GetLogicalMapping(gfx::kMainTarget));
         OverlayDrawText(PresentFpsText(), gfx::GetUiMapping(gfx::kMainTarget), pixel,
                         pixel * kOverlayPadding, pixel * kOverlayPadding);
+#endif
     }
     MenuMouseDraw();
     return gfx::EndRecording();
@@ -587,8 +598,7 @@ void PresentTickEnd() {
 
 std::string PresentFpsText() {
     char piece[64];
-    std::snprintf(piece, sizeof piece, "FPS %.1f", PresentAsync() ? async_fps.load() : overlay.frames.PerSecond());
-    std::string text = piece;
+    std::string text = FpsOnlyText();
 
     if (settings.fps_detail != ConfigFpsDetail::Fps) {
         std::snprintf(piece, sizeof piece, "  TICK %.1f/%g", overlay.ticks.PerSecond(), ClockTickRate());

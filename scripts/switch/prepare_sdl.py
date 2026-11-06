@@ -2,6 +2,7 @@
 from pathlib import Path
 import subprocess
 import os
+from toolchain import git_path
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / ".kazarov/switch/deps/SDL-release-3.4.18"
@@ -27,7 +28,7 @@ def replace(path, before, after):
 def main():
     driver = SOURCE / "src/video/switch/SDL_switchvideo.c"
     if not driver.exists():
-        git = "C:/Program Files/Git/cmd/git.exe" if os.name == "nt" else "git"
+        git = git_path()
         subprocess.run([git, "apply", "-p3", "--directory=" + SOURCE.relative_to(ROOT).as_posix(),
             str(BACKEND / "sdl3-switch.patch")], cwd=ROOT, check=True)
     replace(SOURCE / "cmake/sdlplatform.cmake", 'elseif(CMAKE_SYSTEM_NAME MATCHES "NintendoSwitch")',

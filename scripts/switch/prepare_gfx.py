@@ -49,3 +49,31 @@ def prepare_displaylist(output):
     output=Path(output);output.mkdir(parents=True,exist_ok=True)
     generated=output/'displaylist.cpp';generated.write_text(text)
     return generated
+
+
+def prepare_overlay(output):
+    """Keep the pinned font renderer, adding an exact-size bottom-right FPS entry."""
+    source = ROOT / 'tools/kazarov/src/cpp/platform/overlay.cpp'
+    text = source.read_text()
+    text += r"""
+
+void ctSwitchDrawFps(std::string_view text) {
+    const auto mapping = gfx::GetUiMapping(gfx::kMainTarget);
+    const int pixel = OverlayPixelSize(gfx::GetLogicalMapping(gfx::kMainTarget));
+    int columns = 0;
+    for (char c : text) {
+        if (const auto *glyph = FindFontGlyph(c)) columns += glyph->advance;
+    }
+    const int margin = pixel * kOverlayPadding;
+    const int width = (columns + 2 * kOverlayPadding) * pixel;
+    const int height = (kFontHeight + 2 * kOverlayPadding) * pixel;
+    const int x = std::max(margin, static_cast<int>(mapping.pixel_width) - width - margin);
+    const int y = std::max(margin, static_cast<int>(mapping.pixel_height) - height - margin);
+    OverlayDrawText(text, mapping, pixel, x, y);
+}
+"""
+    output = Path(output)
+    output.mkdir(parents=True, exist_ok=True)
+    generated = output / 'overlay.cpp'
+    generated.write_text(text)
+    return generated

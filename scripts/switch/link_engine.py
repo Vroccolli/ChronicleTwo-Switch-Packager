@@ -9,13 +9,14 @@ import re
 import subprocess
 import sys
 from audit_compile import ROOT
+from toolchain import sdk_root
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=ROOT / "port/build/switch-engine")
     parser.add_argument("--pc-build", type=Path, default=ROOT / "port/build/windows-x64-release")
-    parser.add_argument("--devkitpro", type=Path, default=Path("C:/devkitPro"))
+    parser.add_argument("--devkitpro", type=Path, default=sdk_root())
     parser.add_argument("--jobs", type=int, default=4)
     parser.add_argument("--reuse-objects", action="store_true", help="reuse the existing audit report only if source hashes match")
     parser.add_argument("--libraries", type=Path, help="manifest of actual Switch static archives to link")
