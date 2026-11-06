@@ -1,21 +1,20 @@
-# Packager v0.1.1 preview
+# Packager v0.1.2 preview — native engine 0.9.1
 
-Updated standalone Windows x64 packager, containing native Switch engine 0.7.13.
+Updated standalone Windows x64 packager with the complete native 0.9.1 NRO.
 
-Replaces the bundled 0.7.10 NRO with the complete 427-object 0.7.13 engine build.
-The ISO extractor, matching gameplay seed and controller artwork are unchanged.
-The new NRO matches its build report and the recorded Switch upload checksum.
-The earlier full-disc extraction verification remains applicable to the unchanged
-extractor and seed; gameplay execution of 0.7.13 is not established by these checks.
+- Includes the new moon launcher icon and author credit to The MoonPeople and
+  ChronicleTwo contributors, embedded in the NRO.
+- Includes 0.9.0's FPS-only bottom-right overlay and the earlier engine fixes.
+- The NRO matches its complete 427-object build report and verified Switch upload.
+- The ISO extractor, matching gameplay seed and controller artwork remain unchanged.
+- Full engine source and the Windows fresh-checkout build guide are available on
+  the repository's switch-engine branch, linked from the default README.
 
-- Select a supported PAL ISO and an output directory through the GUI.
-- No Python, development tools, network or PC game installation needed.
-- Verify the ISO, bundled runtime, converted archive and final installation.
-- Preserve existing installations and stage failures separately.
-- Include controller artwork, a 30 FPS default and dependency notices.
+Download ChronicleTwo-Switch-Packager.zip under Assets and extract the whole ZIP
+before opening the EXE. Select your European PAL Dark Chronicle ISO and an output
+folder with at least 12 GiB free. No Python, compilers, SDK or PC installation is
+required to use the prebuilt app. No retail game data is distributed.
 
-Tested end to end with the European PAL ISO. Eight workflow tests pass. This
-engine build is not hardware-tested; performance and compatibility work continues.
-
-Extract the whole ZIP before running the EXE. Allow 12 GiB free and several GiB of
-RAM. The US Dark Cloud 2 ISO is not supported. No retail game data is included.
+Eight packager workflow tests pass. The unchanged extraction pipeline was tested
+previously with the PAL ISO; it was not rerun for this NRO update. Build/package
+and transfer verification do not establish hardware gameplay testing of 0.9.1.

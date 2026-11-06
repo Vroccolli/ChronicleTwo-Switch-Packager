@@ -4,7 +4,7 @@
 
 The complete native engine, Switch adapters, source generators and packaging
 recipes are on the **[switch-engine branch](https://github.com/Vroccolli/ChronicleTwo-Switch-Packager/tree/switch-engine)**.
-The engine source is at **0.9.0 preview**. Start with the
+The engine source is at **0.9.1 preview**. Start with the
 **[fresh-checkout build guide](https://github.com/Vroccolli/ChronicleTwo-Switch-Packager/blob/switch-engine/docs/BUILD_SWITCH.md)**
 for prerequisites, pinned dependencies, outputs and verification details.
 
@@ -23,7 +23,7 @@ than GitHub's source ZIP, which omits the pinned Kazarov submodule.
 
 The `main` branch below is the standalone packager source. The full-source branch
 and prebuilt releases have separate version histories; see each release's notes
-for its bundled NRO version. Version 0.9.0 remains a preview while console
+for its bundled NRO version. Version 0.9.1 remains a preview while console
 compatibility and regression testing continue.
 
 ## Offline app
@@ -38,7 +38,7 @@ from the ISO. The ISO provides the original game assets.
 
 ## Use
 
-1. Download `ChronicleTwo-Switch-Packager.zip` from this repository's Releases.
+1. Download `ChronicleTwo-Switch-Packager.zip` from [Releases](https://github.com/Vroccolli/ChronicleTwo-Switch-Packager/releases).
 2. Extract the entire ZIP. Keep `_internal` beside the executable.
 3. Open `ChronicleTwo-Switch-Packager.exe`.
 4. Select your PAL ISO and an output folder with at least **12 GiB free**.
@@ -69,7 +69,7 @@ output volume before publication.
 The included native engine is a **preview** with ongoing performance and
 compatibility work. Binary/build verification is distinct from hardware testing
 or campaign completion. The installation receipt records the exact version and
-hardware-test status. Current package: engine **0.7.13**, not hardware-tested.
+hardware-test status. Current package: engine **0.9.1**, not hardware-tested.
 
 No retail ISO or completed retail game-data archive is included in this source
 repository or the packager download. The bundled gameplay seed is generated from
