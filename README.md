@@ -1,5 +1,33 @@
 # ChronicleTwo Switch Packager
 
+## Build the whole game from source
+
+The complete native engine, Switch adapters, source generators and packaging
+recipes are on the **[switch-engine branch](https://github.com/Vroccolli/ChronicleTwo-Switch-Packager/tree/switch-engine)**.
+The engine source is at **0.9.0 preview**. Start with the
+**[fresh-checkout build guide](https://github.com/Vroccolli/ChronicleTwo-Switch-Packager/blob/switch-engine/docs/BUILD_SWITCH.md)**
+for prerequisites, pinned dependencies, outputs and verification details.
+
+```powershell
+git clone --branch switch-engine --recurse-submodules https://github.com/Vroccolli/ChronicleTwo-Switch-Packager.git
+cd ChronicleTwo-Switch-Packager
+python scripts/switch/build_from_source.py --check
+python scripts/switch/build_from_source.py --jobs 2 --packager
+```
+
+The guide requires a native Windows development environment and devkitPro SDK.
+This builds the PC extraction/generation tools, the full ARM64 game and the
+offline Windows packager. No retail ISO is needed to compile; users supply their
+own supported PAL ISO when preparing game data. Use a recursive Git clone rather
+than GitHub's source ZIP, which omits the pinned Kazarov submodule.
+
+The `main` branch below is the standalone packager source. The full-source branch
+and prebuilt releases have separate version histories; see each release's notes
+for its bundled NRO version. Version 0.9.0 remains a preview while console
+compatibility and regression testing continue.
+
+## Offline app
+
 An offline Windows app that turns your supported **European PAL Dark Chronicle
 ISO** into a ready-to-copy Switch SD-card folder. Users do not need Python,
 compilers, SDKs, an internet connection, or a PC game installation.
